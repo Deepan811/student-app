@@ -211,7 +211,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             {isEditing ? (
               <>
                 <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">Save</Button>

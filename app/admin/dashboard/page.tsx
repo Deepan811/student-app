@@ -117,21 +117,7 @@ export default function AdminDashboard() {
             prev.map((user) => (user._id === userId ? { ...user, status: action } : user))
           )
         }
-        alert(`User ${action} successfully.`)
-
-        if (action === "approved") {
-          const user = pendingUsers.find(u => u._id === userId);
-          if (user) {
-            await fetch("/api/admin/send-approval-email", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ email: user.email, name: user.name, password: result.plainPassword }),
-            });
-          }
-        }
+        alert(`User ${action} successfully${status === "approved" ? " and password sent via email" : ""}`)
 
       } else {
         alert(`Error processing user action: ${result.message}`)

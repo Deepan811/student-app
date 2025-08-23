@@ -8,10 +8,11 @@ import { ThemeProvider } from "next-themes"
 import { Toaster } from "react-hot-toast"
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.app",
+  title: "SkillChemy",
+  description: "Created By techforge",
+  generator: "SkillChemy.app",
 }
+
 
 export default function RootLayout({
   children,

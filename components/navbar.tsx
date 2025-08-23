@@ -41,23 +41,18 @@ export function Navbar() {
 
         <div className="flex items-center space-x-4">
           {user ? (
-            isMobile ? (
-              <Button variant="ghost" asChild>
-                <Link href="/auth/profile"><User className="h-5 w-5" /></Link>
-              </Button>
-            ) : (
-              <DropdownMenu>
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2">
                     {user.role === "admin" ? (
                       <>
                         <User className="h-4 w-4" />
-                        <span className="hidden sm:inline">Admin</span>
+                        <span>Admin</span>
                       </>
                     ) : (
                       <>
                         <User className="h-4 w-4" />
-                        <span className="hidden sm:inline">{user.name}</span>
+                        <span>{user.name}</span>
                       </>
                     )}
                   </Button>
@@ -89,23 +84,15 @@ export function Navbar() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            )
           ) : (
-            isMobile ? (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link href="/auth" className="hover:text-red-500">User</Link>
-                </Button>
-                <Button variant="ghost" asChild>
-                  <Link href="/admin" className="hover:text-red-500">Admin</Link>
-                </Button>
-              </>
-            ) : (
-              <>
+            <>
                 <Button variant="outline" className="hidden sm:inline-flex bg-transparent hover:text-red-500" asChild>
                   <Link href="/auth">Login</Link>
                 </Button>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground hover:text-black-500" asChild>
+                <Button className="sm:hidden bg-primary hover:bg-primary/90 text-primary-foreground hover:text-black-500" asChild>
+                  <Link href="/auth">User</Link>
+                </Button>
+                 <Button variant="outline" className="hidden sm:inline-flex bg-transparent hover:text-red-500" asChild>
                   <Link href="/auth">Register</Link>
                 </Button>
                 <Button
@@ -116,7 +103,6 @@ export function Navbar() {
                   <Link href="/admin">Admin</Link>
                 </Button>
               </>
-            )
           )}
         </div>
       </div>

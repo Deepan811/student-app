@@ -88,7 +88,7 @@ export default function AuthPage() {
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Registration Submitted!</h2>
               <p className="text-slate-300 mb-6">
-                Your registration details have been submitted successfully. Please check your email for confirmation.
+                Your registration details have been submitted successfully. You can now:
               </p>
 
               <div className="bg-blue-50/10 border border-blue-200/20 rounded-lg p-4 mb-6">
@@ -116,6 +116,11 @@ export default function AuthPage() {
                 <Button variant="outline" onClick={() => setShowRegistrationSuccess(false)} className="w-full bg-transparent border-white/20 hover:bg-white/10">
                   Register Another Account
                 </Button>
+                <Link href="/" passHref>
+                  <Button variant="outline" className="w-full bg-transparent border-white/20 hover:bg-white/10">
+                    Go to Home
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
