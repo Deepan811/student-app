@@ -1,4 +1,4 @@
-import User from "../models/User"
+import User, { updateProfile as updateUserProfileModel } from "../models/User"
 import Admin from "../models/Admin"
 import jwt from "jsonwebtoken"
 import { sendRegistrationConfirmationEmail, sendEmail } from "../lib/emailService"
@@ -24,7 +24,7 @@ export const registerStudent = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findByEmail(email)
+    const existingUser = await User.findOne({ email })
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -86,7 +86,7 @@ export const loginStudent = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findByEmail(email);
+    const user = await User.findOne({ email });
     if (!user) {
       return { status: 401, data: { success: false, message: "Invalid credentials" } };
     }
@@ -96,7 +96,7 @@ export const loginStudent = async (req, res) => {
       return { status: 403, data: { success: false, message: "Your account is pending approval. Please wait for admin approval." } };
     }
 
-    const isPasswordValid = await User.verifyPassword(password, user);
+    const isPasswordValid = await user.comparePassword(password);
     console.log("loginStudent: isPasswordValid:", isPasswordValid);
     if (!isPasswordValid) {
       return { status: 401, data: { success: false, message: "Invalid credentials" } };
@@ -142,7 +142,7 @@ export const loginAdmin = async (req, res) => {
     }
 
     // Find admin
-    const admin = await Admin.findByEmail(email)
+    const admin = await Admin.findOne({ email })
     if (!admin) {
       return res.status(401).json({
         success: false,
@@ -151,7 +151,7 @@ export const loginAdmin = async (req, res) => {
     }
 
     // Verify password
-    const isPasswordValid = await Admin.verifyPassword(password, admin.password)
+    const isPasswordValid = await admin.comparePassword(password)
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -199,9 +199,9 @@ export const forgotPassword = async (req, res) => {
 
     let user
     if (userType === "admin") {
-      user = await Admin.findByEmail(email)
+      user = await Admin.findOne({ email })
     } else {
-      user = await User.findByEmail(email)
+      user = await User.findOne({ email })
     }
 
     if (!user) {
@@ -272,7 +272,7 @@ export const getUserProfile = async (req, res) => { // Keep req, res for now, bu
     }
 
     // Remove password from response
-    const { password, ...userWithoutPassword } = user
+    const { password, ...userWithoutPassword } = user.toObject()
 
     return { status: 200, data: { success: true, data: userWithoutPassword } }
   } catch (error) {
@@ -287,7 +287,7 @@ export const updateUserProfile = async (req, res) => {
     const userId = req.user.id;
     const updatedData = req.body;
 
-    const updatedUser = await User.updateProfile(userId, updatedData);
+    const updatedUser = await updateUserProfileModel(userId, updatedData);
 
     if (!updatedUser) {
       return { status: 404, data: { success: false, message: "User not found" } };

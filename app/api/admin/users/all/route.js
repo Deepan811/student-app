@@ -1,33 +1,34 @@
 import { NextResponse } from "next/server";
+import { viewAllUsers } from "@/controllers/adminController";
+import { verifyToken, isAdmin } from "@/middleware/auth";
+import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
-import { connectMongoDB } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import { verifyToken, isAdmin } from "@/middleware/auth"; // Import isAdmin
 
 export async function GET(request) {
   try {
-    const tokenVerificationResult = await verifyToken(request); // Pass request directly
+    const tokenVerificationResult = await verifyToken(request);
     if (tokenVerificationResult.status !== 200) {
       return NextResponse.json(tokenVerificationResult.data, { status: tokenVerificationResult.status });
     }
-    const user = tokenVerificationResult.data.user; // Get user from result
+    const user = tokenVerificationResult.data.user;
 
-    const adminVerificationResult = await isAdmin(user); // Pass user directly
+    const adminVerificationResult = await isAdmin(user);
     if (adminVerificationResult.status !== 200) {
       return NextResponse.json(adminVerificationResult.data, { status: adminVerificationResult.status });
     }
 
-    await connectMongoDB();
-    const users = await User.getAllUsersForAdmin();
-    return NextResponse.json({ users }, { status: 200 });
+    const result = await viewAllUsers(request, {});
+    return NextResponse.json(result.data, { status: result.status });
   } catch (error) {
     console.error("Error in GET /api/admin/users/all:", error);
-    return NextResponse.json({ message: "Error", error }, { status: 500 });
+    return NextResponse.json({ message: "Error", error: error.message }, { status: 500 });
   }
 }
 
 export async function DELETE(request) {
   try {
+    await dbConnect();
     const tokenVerificationResult = await verifyToken(request); // Pass request directly
     if (tokenVerificationResult.status !== 200) {
       return NextResponse.json(tokenVerificationResult.data, { status: tokenVerificationResult.status });
@@ -40,7 +41,6 @@ export async function DELETE(request) {
     }
 
     const id = request.nextUrl.searchParams.get("id");
-    await connectMongoDB();
     await User.findByIdAndDelete(id);
     return NextResponse.json({ message: "User deleted" }, { status: 200 });
   } catch (error) {
@@ -51,6 +51,7 @@ export async function DELETE(request) {
 
 export async function PUT(request) {
   try {
+    await dbConnect();
     const tokenVerificationResult = await verifyToken(request); // Pass request directly
     if (tokenVerificationResult.status !== 200) {
       return NextResponse.json(tokenVerificationResult.data, { status: tokenVerificationResult.status });
@@ -64,7 +65,6 @@ export async function PUT(request) {
 
     const id = request.nextUrl.searchParams.get("id");
     const { name, email, password, role, courses } = await request.json();
-    await connectMongoDB();
 
     const updateFields = { name, email, role, courses };
 

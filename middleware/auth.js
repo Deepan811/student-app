@@ -23,18 +23,18 @@ export const verifyToken = async (request) => { // Accept NextRequest object
 
 // Check if user is admin
 export const isAdmin = async (user) => { // Accept user object directly
-  console.log("isAdmin: Checking user:", user);
+  
   try {
     if (!user || user.role !== "admin") {
-      console.log("isAdmin: User is not admin or user object is invalid.");
+      
       return { status: 403, data: { success: false, message: "Access denied. Admin privileges required." } }
     }
 
     // Verify admin exists in database
     const admin = await Admin.findById(user.id) // Use user.id
-    console.log("isAdmin: Result of Admin.findById:", admin);
+    
     if (!admin) {
-      console.log("isAdmin: Admin not found in DB.");
+      
       return { status: 403, data: { success: false, message: "Admin not found" } }
     }
 

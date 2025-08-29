@@ -170,3 +170,10 @@ export const adminApi = {
     })
   },
 }
+
+export const api = {
+  get: <T>(endpoint: string, options: RequestInit = {}) => apiCall<T>(endpoint, { ...options, method: 'GET' }),
+  post: <T>(endpoint: string, body: any, options: RequestInit = {}) => apiCall<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
+  put: <T>(endpoint: string, body: any, options: RequestInit = {}) => apiCall<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  delete: <T>(endpoint: string, options: RequestInit = {}) => apiCall<T>(endpoint, { ...options, method: 'DELETE' }),
+};

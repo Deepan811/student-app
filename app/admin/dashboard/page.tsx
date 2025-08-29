@@ -140,7 +140,7 @@ export default function AdminDashboard() {
       case "pending":
         return <Badge variant="secondary" className="bg-amber-500/20 text-amber-300">Pending</Badge>
       case "approved":
-        return <Badge variant="secondary" className="bg-green-500/20 text-green-300">Approved</Badge>
+        return <Badge variant="secondary" className="bg-green-600 text-white">Approved</Badge>
       case "rejected":
         return <Badge variant="destructive">Rejected</Badge>
       default:
@@ -157,18 +157,18 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-6">
+    <div className="min-h-screen text-white p-4 md:p-6 bg-gradient-to-br from-purple-600 to-blue-500">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
             <p className="text-slate-300">Manage student registrations and approvals</p>
           </div>
-          <div className="flex gap-2 md:gap-4">
-            <Button asChild variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
+          <div className="flex gap-2 flex-wrap md:gap-4">
+            <Button asChild variant="outline" className="w-full md:w-auto bg-white/20 border-none text-white hover:bg-white/40 transition-all duration-300">
               <Link href="/">Go to Home</Link>
             </Button>
-            <Button onClick={handleLogout} variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
+            <Button onClick={handleLogout} variant="outline" className="w-full md:w-auto bg-white/20 border-none text-white hover:bg-white/40 transition-all duration-300">
               Logout
             </Button>
           </div>
@@ -176,13 +176,13 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <Card className="backdrop-blur-lg bg-black/40 border border-white/10 mb-8">
+            <Card className="bg-white/30 backdrop-blur-lg border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 mb-8">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-white">Pending Student Registrations</CardTitle>
                   <CardDescription className="text-slate-300">Review and approve new student registrations</CardDescription>
                 </div>
-                <Button onClick={fetchPendingUsers} size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
+                <Button onClick={fetchPendingUsers} size="sm" variant="outline" className="bg-white/20 border-none text-white hover:bg-white/40 transition-all duration-300">
                   <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 </Button>
               </CardHeader>
@@ -196,17 +196,17 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="space-y-4">
                     {pendingUsers.map((user) => (
-                      <div key={user._id} className="flex flex-wrap items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 gap-4">
+                      <div key={user._id} className="flex flex-wrap items-center justify-between p-4 bg-black/20 rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
                         <div className="flex-grow">
                           <h3 className="font-semibold text-white">{user.name}</h3>
                           <p className="text-slate-300 text-sm flex items-center gap-2"><Mail className="h-4 w-4" />{user.email}</p>
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
-                          <Button size="sm" onClick={() => handleUserAction(user._id, "approved")} disabled={processingUser === user._id} className="bg-green-600 hover:bg-green-700 text-white">
+                          <Button size="sm" onClick={() => handleUserAction(user._id, "approved")} disabled={processingUser === user._id} className="bg-green-700 hover:bg-green-800 text-white shadow-sm hover:shadow-md transition-all duration-300">
                             <UserCheck className="h-4 w-4 md:mr-1" />
                             <span className="hidden md:inline">{processingUser === user._id ? "Processing..." : "Approve"}</span>
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleUserAction(user._id, "rejected")} disabled={processingUser === user._id} className="bg-red-600 hover:bg-red-700">
+                          <Button size="sm" variant="destructive" onClick={() => handleUserAction(user._id, "rejected")} disabled={processingUser === user._id} className="bg-red-600 hover:bg-red-700 shadow-sm hover:shadow-md transition-all duration-300">
                             <UserX className="h-4 w-4 md:mr-1" />
                             <span className="hidden md:inline">Reject</span>
                           </Button>
@@ -221,23 +221,34 @@ export default function AdminDashboard() {
 
           <div className="lg:col-span-1">
             <AddStudentForm />
+            <Card className="bg-white/30 backdrop-blur-lg border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 mt-8">
+              <CardHeader>
+                <CardTitle className="text-white">Batch Management</CardTitle>
+                <CardDescription className="text-slate-300">Create and manage student batches</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full bg-white/20 border-none text-white hover:bg-white/40 transition-all duration-300">
+                  <Link href="/admin/batches">Go to Batch Management</Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
-        <Card className="backdrop-blur-lg bg-black/40 border border-white/10 mt-8">
+        <Card className="bg-white/30 backdrop-blur-lg border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 mt-8">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-white">All Registered Users</CardTitle>
               <CardDescription className="text-slate-300">View all users and their status. For debugging purposes.</CardDescription>
             </div>
-            <Button onClick={fetchAllUsers} size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
+            <Button onClick={fetchAllUsers} size="sm" variant="outline" className="bg-white/20 border-none text-white hover:bg-white/40 transition-all duration-300">
               <RefreshCw className={`h-4 w-4 ${loadingAllUsers ? 'animate-spin' : ''}`} />
             </Button>
           </CardHeader>
           <CardContent>
             {!viewingAll && (
               <div className="text-center py-8">
-                <Button onClick={handleViewAllUsers} disabled={loadingAllUsers}>
+                <Button onClick={handleViewAllUsers} disabled={loadingAllUsers} className="bg-white/20 border-none text-white hover:bg-white/40 transition-all duration-300">
                   <Eye className="h-4 w-4 mr-2" />
                   {loadingAllUsers ? "Loading..." : "View All Users"}
                 </Button>
@@ -250,7 +261,7 @@ export default function AdminDashboard() {
                   <p className="text-slate-300 text-center">No users found in the database.</p>
                 ) : (
                   allUsers.map((user) => (
-                    <div key={user._id} className="flex flex-wrap items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 gap-4">
+                    <div key={user._id} className="flex flex-wrap items-center justify-between p-4 bg-black/20 rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
                       <div className="flex-grow">
                         <h3 className="font-semibold text-white">{user.name}</h3>
                         <p className="text-slate-300 text-sm flex items-center gap-2"><Mail className="h-4 w-4" />{user.email}</p>

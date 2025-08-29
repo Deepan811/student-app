@@ -10,15 +10,24 @@ interface CourseCardProps {
   description: string
 }
 
+const imagePathMap: { [key: string]: string } = {
+  "/images/react-course.png": "/web-dev-bootcamp.png",
+  "/images/nodejs-course.png": "/web-dev-bootcamp.png",
+  "/images/python-course.png": "/data-science-ml-analytics.png",
+  "/images/uiux-course.png": "/ui-ux-design-concept.png",
+  "/images/ml-course.png": "/data-science-ml-analytics.png",
+};
+
 export function CourseCard({ title, image, originalPrice, discountPrice, description }: CourseCardProps) {
   const discountPercentage = Math.round(((originalPrice - discountPrice) / originalPrice) * 100)
+  const correctedImagePath = imagePathMap[image] || image || "/placeholder.svg";
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-card border-border">
       <CardHeader className="p-0">
         <div className="relative overflow-hidden rounded-t-lg">
           <img
-            src={image || "/placeholder.svg"}
+            src={correctedImagePath}
             alt={title}
             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
           />

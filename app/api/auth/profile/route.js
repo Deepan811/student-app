@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { getUserProfile, updateUserProfile } from "../../../../controllers/authController";
 import { verifyToken } from "../../../../middleware/auth";
+import dbConnect from "../../../../lib/dbConnect";
 
 export async function GET(request) {
   try {
+    await dbConnect();
     const tokenVerificationResult = await verifyToken(request); // Pass request directly
     if (tokenVerificationResult.status !== 200) {
       return NextResponse.json(tokenVerificationResult.data, { status: tokenVerificationResult.status });
@@ -25,6 +27,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    await dbConnect();
     const tokenVerificationResult = await verifyToken(request);
     if (tokenVerificationResult.status !== 200) {
       return NextResponse.json(tokenVerificationResult.data, { status: tokenVerificationResult.status });

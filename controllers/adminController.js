@@ -1,12 +1,27 @@
 import User from "../models/User"
 import Admin from "../models/Admin"
+import Batch from "../models/Batch"
 import { sendEmail } from "../lib/emailService"
+import jwt from "jsonwebtoken";
+
+const serializeAdmin = (admin) => {
+  if (!admin) return null;
+  return {
+    _id: admin._id.toString(),
+    name: admin.name,
+    email: admin.email,
+    role: admin.role,
+    permissions: admin.permissions,
+    createdAt: admin.createdAt.toISOString(),
+    updatedAt: admin.updatedAt.toISOString(),
+  };
+};
 
 // Get all pending users for approval
 export const getPendingUsers = async (req, res) => {
   try {
     const pendingUsers = await User.getPendingUsers()
-    console.log("Fetched pending users:", pendingUsers);
+    
 
     return { status: 200, data: { success: true, users: pendingUsers, count: pendingUsers.length } }
   } catch (error) {
@@ -19,17 +34,10 @@ export const getPendingUsers = async (req, res) => {
 export const viewAllUsers = async (req, res) => {
   try {
     const allUsers = await User.getAllUsersForAdmin()
-    res.status(200).json({
-      success: true,
-      users: allUsers,
-      count: allUsers.length,
-    })
+    return { status: 200, data: { success: true, users: allUsers, count: allUsers.length } }
   } catch (error) {
     console.error("View all users error:", error)
-    res.status(500).json({
-      success: false,
-      message: "Server error while fetching all users",
-    })
+    return { status: 500, data: { success: false, message: "Server error while fetching all users" } }
   }
 }
 
@@ -145,7 +153,7 @@ export const getAllUsers = async (req, res) => {
 
     const result = await User.getAllUsers(page, limit)
 
-    res.status(200).json({
+    return { status: 200, data: {
       success: true,
       data: result.users,
       pagination: {
@@ -155,13 +163,13 @@ export const getAllUsers = async (req, res) => {
         hasNextPage: result.page < result.totalPages,
         hasPrevPage: result.page > 1,
       },
-    })
+    } }
   } catch (error) {
     console.error("Get all users error:", error)
-    res.status(500).json({
+    return { status: 500, data: {
       success: false,
       message: "Server error while fetching users",
-    })
+    } }
   }
 }
 
@@ -171,7 +179,7 @@ export const createAdmin = async (req) => {
     const { name, email, password, permissions } = req.body
 
     // Check if admin already exists
-    const existingAdmin = await Admin.findByEmail(email)
+    const existingAdmin = await Admin.findOne({ email })
     if (existingAdmin) {
       return { status: 400, data: {
         success: false,
@@ -208,3 +216,84 @@ export const createAdmin = async (req) => {
     } }
   }
 }
+
+
+// Admin login
+export const adminLogin = async (req) => {
+  try {
+    const { email, password } = req.body
+
+    if (!email || !password) {
+      return { status: 400, data: {
+        success: false,
+        message: "Email and password are required",
+      } }
+    }
+
+    const admin = await Admin.findOne({ email });
+
+    if (!admin) {
+      return { status: 401, data: {
+        success: false,
+        message: "Invalid admin credentials",
+      } };
+    }
+
+    const isPasswordValid = await admin.comparePassword(password);
+
+    if (!isPasswordValid) {
+      return { status: 401, data: {
+        success: false,
+        message: "Invalid admin credentials",
+      } };
+    }
+
+    const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
+
+    const serializableAdmin = serializeAdmin(admin);
+
+    return { status: 200, data: {
+      success: true,
+      message: "Admin logged in successfully",
+      token: token,
+      admin: serializableAdmin,
+    } }
+  } catch (error) {
+    console.error("Admin login error (caught in adminController):", error);
+    return { status: 500, data: {
+      success: false,
+      message: "Server error during admin login",
+    } }
+  }
+}
+
+export const getApprovedStudentsForBatch = async (req, res) => {
+  try {
+    const approvedStudents = await User.find({ status: 'approved' });
+
+    const studentsWithBatchInfo = await Promise.all(approvedStudents.map(async (student) => {
+      try {
+        const batch = await Batch.findOne({ students: student._id });
+        return {
+          ...student.toObject(),
+          batchName: batch ? batch.name : null,
+          batchId: batch ? batch._id : null,
+        };
+      } catch (mapError) {
+        console.error("Error mapping student with batch info:", mapError);
+        return {
+          ...student.toObject(),
+          batchName: null,
+          batchId: null,
+        };
+      }
+    }));
+
+    return { status: 200, data: { success: true, students: studentsWithBatchInfo } };
+  } catch (error) {
+    console.error("Error fetching approved students for batch:", error);
+    return { status: 500, data: { success: false, message: "Server error fetching students for batch" } };
+  }
+};

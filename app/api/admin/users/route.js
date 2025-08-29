@@ -2,11 +2,12 @@ import { getAllUsers } from "../../../../controllers/adminController"
 import { verifyToken, isAdmin } from "../../../../middleware/auth"
 import { NextResponse } from "next/server"
 import User from "../../../../models/User"
-import { connectMongoDB } from "../../../../lib/db"
+import dbConnect from "../../../../lib/dbConnect"
 import { sendAccountPendingEmail } from "../../../../lib/emailService"
 
 export async function GET(request) {
   try {
+    await dbConnect();
     const tokenResult = await verifyToken(request)
     if (tokenResult.status !== 200) {
       return NextResponse.json(tokenResult.data, { status: tokenResult.status })
@@ -17,20 +18,11 @@ export async function GET(request) {
       return NextResponse.json(adminResult.data, { status: adminResult.status })
     }
 
-    const mockReq = {
-      admin: adminResult.data.admin,
-      query: Object.fromEntries(new URL(request.url).searchParams),
-    }
+    const page = Number.parseInt(request.nextUrl.searchParams.get("page")) || 1;
+    const limit = Number.parseInt(request.nextUrl.searchParams.get("limit")) || 10;
 
-    return new Promise(async (resolve) => {
-      const mockRes = {
-        status: (code) => ({
-          json: (data) => resolve(NextResponse.json(data, { status: code })),
-        }),
-        json: (data) => resolve(NextResponse.json(data)),
-      }
-      await getAllUsers(mockReq, mockRes)
-    })
+    const result = await getAllUsers({ query: { page, limit } }, {});
+    return NextResponse.json(result.data, { status: result.status });
   } catch (error) {
     console.error("Get all users error:", error)
     return NextResponse.json(
@@ -56,9 +48,9 @@ export async function POST(request) {
     }
 
     const { name, email } = await request.json();
-    await connectMongoDB();
+    await dbConnect();
 
-    const existingUser = await User.findByEmail(email);
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return NextResponse.json({ success: false, message: "User with this email already exists." }, { status: 409 });
     }

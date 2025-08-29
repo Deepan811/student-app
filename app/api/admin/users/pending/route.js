@@ -6,14 +6,14 @@ export async function GET(request) {
   try {
     // Step 1: Verify the token
     const tokenResult = await verifyToken(request)
-    console.log("tokenResult:", tokenResult);
+    
     if (tokenResult.status !== 200) {
       return NextResponse.json(tokenResult.data, { status: tokenResult.status })
     }
 
     // Step 2: Check if the user is an admin
     const adminResult = await isAdmin(tokenResult.data.user)
-    console.log("adminResult:", adminResult);
+    
     if (adminResult.status !== 200) {
       return NextResponse.json(adminResult.data, { status: adminResult.status })
     }

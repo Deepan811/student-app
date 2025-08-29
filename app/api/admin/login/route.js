@@ -1,31 +1,13 @@
-import { loginAdmin } from "../../../../controllers/authController"
+import { adminLogin } from "@/controllers/adminController";
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const body = await request.json()
-    console.log("[v0] Admin login request body:", body)
-
-    let responseData = null
-    let statusCode = 200
-
-    const req = { body }
-    const res = {
-      status: (code) => {
-        statusCode = code
-        return {
-          json: (data) => {
-            responseData = data
-            return data
-          },
-        }
-      },
-    }
-
-    await loginAdmin(req, res)
-
-    return Response.json(responseData, { status: statusCode })
+    const body = await request.json();
+    const result = await adminLogin({ body });
+    return NextResponse.json(result.data, { status: result.status });
   } catch (error) {
-    console.error("[v0] Admin login API error:", error)
-    return Response.json({ success: false, message: "Invalid request data" }, { status: 400 })
+    console.error("[v1] Admin login API error:", error);
+    return NextResponse.json({ success: false, message: "Internal Server Error" }, { status: 500 });
   }
 }
