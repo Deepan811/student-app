@@ -29,6 +29,7 @@ const formSchema = z.object({
   courseId: z.string().min(1, { message: "Course is required." }),
   startDate: z.string().min(1, { message: "Start Date is required." }),
   endDate: z.string().min(1, { message: "End Date is required." }),
+  fees: z.coerce.number().min(0, { message: "Fees must be a positive number." }),
 });
 
 export function AddBatchForm({ onClose, onBatchCreated }: { onClose?: () => void, onBatchCreated?: () => void }) {
@@ -62,6 +63,7 @@ export function AddBatchForm({ onClose, onBatchCreated }: { onClose?: () => void
       courseId: "",
       startDate: "",
       endDate: "",
+      fees: 0,
     },
   });
 
@@ -115,11 +117,11 @@ export function AddBatchForm({ onClose, onBatchCreated }: { onClose?: () => void
   }, [token]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (selectedStudents.length < 3) {
-      setStudentSelectionError("Please select at least 3 students to create a batch.");
+    if (selectedStudents.length < 1) {
+      setStudentSelectionError("Please select at least 1 student to create a batch.");
       toast({
         title: "Validation Error",
-        description: "Please select at least 3 students to create a batch.",
+        description: "Please select at least 1 student to create a batch.",
         variant: "destructive",
       });
       return;
@@ -131,6 +133,7 @@ export function AddBatchForm({ onClose, onBatchCreated }: { onClose?: () => void
         courseId: values.courseId,
         startDate: values.startDate,
         endDate: values.endDate,
+        fees: values.fees,
         students: selectedStudents,
       })
       if (onBatchCreated) {
@@ -154,15 +157,6 @@ export function AddBatchForm({ onClose, onBatchCreated }: { onClose?: () => void
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 relative">
-          {/* <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="absolute  right-2"
-            onClick={() => onClose ? onClose() : router.push("/admin/dashboard")}
-          >
-            X
-          </Button> */}
           <FormField
             control={form.control}
             name="batchName"
@@ -221,6 +215,19 @@ export function AddBatchForm({ onClose, onBatchCreated }: { onClose?: () => void
                 <FormLabel>End Date</FormLabel>
                 <FormControl>
                   <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="fees"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fees</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="Enter fee amount" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

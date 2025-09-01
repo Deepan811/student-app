@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AddBatchForm } from "@/components/add-batch-form"
 import { api } from "@/lib/api"
+import { useToast } from "@/components/ui/use-toast"
 
 import {
   Dialog,
@@ -26,13 +27,15 @@ const BatchesPage = () => {
     courseName: string;
     startDate: string;
     endDate: string;
+    fees: number;
   }
   
   const [batches, setBatches] = useState<Batch[]>([])
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null)
-  const [students, setStudents] = useState<Array<{ _id: string; name: string; email: string }>>([])
+  const [students, setStudents] = useState<Array<{ _id: string; name: string; email: string; paymentStatus: string }>>([])
   const { user, isLoading, token } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
 
   const fetchBatches = async () => {
         const response = await api.get("/admin/batches")
@@ -40,7 +43,7 @@ const BatchesPage = () => {
           setBatches(response.data)
         } else {
           setBatches([]); // Ensure it's an empty array on error
-          // Optionally, add a toast or error message here
+          toast({ title: "Error", description: "Failed to fetch batches.", variant: "destructive" });
         }
       }
 
@@ -52,7 +55,6 @@ const BatchesPage = () => {
 
   useEffect(() => {
     if (user && user.role === 'admin') {
-      
       fetchBatches()
     }
   }, [user])
@@ -63,10 +65,47 @@ const BatchesPage = () => {
     if (response.success && Array.isArray(response.data)) {
       setStudents(response.data)
     } else {
-      setStudents([]); // Ensure it's an empty array on error
-      // Optionally, add a toast or error message here
+      setStudents([]);
+      toast({ title: "Error", description: "Failed to fetch students for this batch.", variant: "destructive" });
     }
   }
+
+  const handleUpdatePaymentStatus = async (studentId: string, currentStatus: string) => {
+    if (!selectedBatch) return;
+
+    const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+    try {
+      const response = await api.put(
+        `/admin/batches/${selectedBatch._id}/students/${studentId}`,
+        { paymentStatus: newStatus }
+      );
+
+      if (response.success) {
+        setStudents(prevStudents =>
+          prevStudents.map(s =>
+            s._id === studentId ? { ...s, paymentStatus: newStatus } : s
+          )
+        );
+        toast({
+          title: "Success",
+          description: "Payment status updated.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to update status.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      toast({
+        title: "API Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading || !user || user.role !== 'admin') {
     return <div>Loading...</div>; // Or a proper loading spinner
@@ -114,6 +153,9 @@ const BatchesPage = () => {
                     <strong>End Date:</strong>{" "}
                     {new Date(batch.endDate).toLocaleDateString()}
                   </p>
+                  <p>
+                    <strong>Fees:</strong> {batch.fees}
+                  </p>
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button
@@ -129,10 +171,23 @@ const BatchesPage = () => {
                           Students in {selectedBatch?.name}
                         </DialogTitle>
                       </DialogHeader>
-                      <ul>
+                      <ul className="space-y-2">
                         {students.map(student => (
-                          <li key={student._id}>
-                            {student.name} ({student.email})
+                          <li key={student._id} className="flex justify-between items-center p-2 hover:bg-white/10 rounded-md">
+                            <div>
+                              <span>{student.name} ({student.email})</span>
+                              <span className={`ml-4 font-semibold capitalize ${student.paymentStatus === 'paid' ? 'text-green-400' : 'text-red-400'}`}>
+                                {student.paymentStatus}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant={student.paymentStatus === 'paid' ? 'destructive' : 'default'}
+                              onClick={() => handleUpdatePaymentStatus(student._id, student.paymentStatus)}
+                              className="bg-white/20 hover:bg-white/40"
+                            >
+                              {student.paymentStatus === 'paid' ? 'Mark as Unpaid' : 'Mark as Paid'}
+                            </Button>
                           </li>
                         ))}
                       </ul>

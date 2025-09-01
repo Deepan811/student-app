@@ -262,9 +262,15 @@ export const getUserProfile = async (req, res) => { // Keep req, res for now, bu
 
     let user
     if (userRole === "admin") {
-      user = await Admin.findById(userId)
+      user = await Admin.findById(userId);
     } else {
-      user = await User.findById(userId)
+      user = await User.findById(userId).populate({
+        path: 'batch',
+        populate: {
+          path: 'courseId',
+          model: 'Course'
+        }
+      });
     }
 
     if (!user) {

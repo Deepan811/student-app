@@ -7,10 +7,15 @@ import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Mail, User, Tag, Edit, Home, LogOut, Phone, Building, GraduationCap } from "lucide-react"
+import { Mail, User, Tag, Edit, Home, LogOut, Phone, Building, GraduationCap, Link as LinkIcon, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+interface SocialLink {
+  heading: string
+  link: string
+}
 
 interface UserProfile {
   id: string
@@ -22,7 +27,27 @@ interface UserProfile {
   collegeName?: string
   departmentName?: string
   courseName?: string
+  socialLinks?: SocialLink[]
+  batch?: {
+    _id: string
+    name: string
+    startDate: string
+    endDate: string
+    courseId: {
+      _id: string
+      name: string
+    }
+    fees: number
+  }
 }
+
+const ensureAbsoluteUrl = (url: string) => {
+  if (!url) return '#';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  return `https://${url}`;
+};
 
 export default function ProfilePage() {
   const { user, token, logout, isLoading: isAuthLoading } = useAuth()
@@ -52,8 +77,12 @@ export default function ProfilePage() {
         if (response.ok) {
           const data = await response.json()
           if (data.success) {
-            setProfile(data.data)
-            setFormData(data.data)
+            const profileData = data.data
+            setProfile(profileData)
+            setFormData({
+              ...profileData,
+              socialLinks: profileData.socialLinks || [],
+            })
           } else {
             setError(data.message || "Failed to fetch profile")
           }
@@ -81,6 +110,28 @@ export default function ProfilePage() {
     }
   }
 
+  const handleSocialLinkChange = (index: number, field: 'heading' | 'link', value: string) => {
+    if (formData && formData.socialLinks) {
+      const newSocialLinks = [...formData.socialLinks]
+      newSocialLinks[index] = { ...newSocialLinks[index], [field]: value }
+      setFormData({ ...formData, socialLinks: newSocialLinks })
+    }
+  }
+
+  const addSocialLink = () => {
+    if (formData) {
+      const newSocialLinks = [...(formData.socialLinks || []), { heading: "", link: "" }]
+      setFormData({ ...formData, socialLinks: newSocialLinks })
+    }
+  }
+
+  const removeSocialLink = (index: number) => {
+    if (formData && formData.socialLinks) {
+      const newSocialLinks = formData.socialLinks.filter((_, i) => i !== index)
+      setFormData({ ...formData, socialLinks: newSocialLinks })
+    }
+  }
+
   const handleSave = async () => {
     if (!formData) return
 
@@ -90,6 +141,7 @@ export default function ProfilePage() {
       collegeName: formData.collegeName,
       departmentName: formData.departmentName,
       courseName: formData.courseName,
+      socialLinks: formData.socialLinks,
     };
 
     try {
@@ -105,7 +157,12 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setProfile(data.data)
+          const profileData = data.data
+          setProfile(profileData)
+          setFormData({
+            ...profileData,
+            socialLinks: profileData.socialLinks || [],
+          })
           setIsEditing(false)
         } else {
           setError(data.message || "Failed to update profile")
@@ -176,49 +233,107 @@ export default function ProfilePage() {
           </div>
 
           {isEditing ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" value={formData?.name || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
+            <div className="space-y-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" value={formData?.name || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" value={formData?.email || ""} readOnly className="bg-black/20 border-none text-slate-400 cursor-not-allowed" />
+                </div>
+                <div>
+                  <Label htmlFor="mobile">Mobile</Label>
+                  <Input id="mobile" value={formData?.mobile || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
+                </div>
+                <div>
+                  <Label htmlFor="collegeName">College Name</Label>
+                  <Input id="collegeName" value={formData?.collegeName || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
+                </div>
+                <div>
+                  <Label htmlFor="departmentName">Department Name</Label>
+                  <Input id="departmentName" value={formData?.departmentName || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
+                </div>
+                <div>
+                  <Label htmlFor="courseName">Course Name</Label>
+                  <Input id="courseName" value={formData?.courseName || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
+                </div>
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={formData?.email || ""} readOnly className="bg-black/20 border-none text-slate-400 cursor-not-allowed" />
-              </div>
-              <div>
-                <Label htmlFor="mobile">Mobile</Label>
-                <Input id="mobile" value={formData?.mobile || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
-              </div>
-              <div>
-                <Label htmlFor="collegeName">College Name</Label>
-                <Input id="collegeName" value={formData?.collegeName || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
-              </div>
-              <div>
-                <Label htmlFor="departmentName">Department Name</Label>
-                <Input id="departmentName" value={formData?.departmentName || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
-              </div>
-              <div>
-                <Label htmlFor="courseName">Course Name</Label>
-                <Input id="courseName" value={formData?.courseName || ""} onChange={handleInputChange} className="bg-white/20 border-none text-white" />
+                <h3 className="text-xl font-semibold mb-3 text-slate-800">Social Links</h3>
+                <div className="space-y-4">
+                  {formData?.socialLinks?.map((social, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        placeholder="Heading (e.g., GitHub)"
+                        value={social.heading}
+                        onChange={(e) => handleSocialLinkChange(index, 'heading', e.target.value)}
+                        className="bg-white/20 border-none text-white"
+                      />
+                      <Input
+                        placeholder="URL"
+                        value={social.link}
+                        onChange={(e) => handleSocialLinkChange(index, 'link', e.target.value)}
+                        className="bg-white/20 border-none text-white"
+                      />
+                      <Button onClick={() => removeSocialLink(index)} variant="destructive" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button onClick={addSocialLink} className="mt-2 bg-white/20 border-none text-white hover:bg-white/60 transition-all duration-300">
+                    Add Social Link
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div>
-                <h3 className="text-xl font-semibold mb-3 text-slate-800">Contact Information</h3>
-                <div className="space-y-2 text-slate-600">
-                  <p className="flex items-center gap-2 hover:text-slate-800"><Mail className="h-4 w-4 text-slate-500" /> {profile.email}</p>
-                  <p className="flex items-center gap-2 hover:text-slate-800"><Phone className="h-4 w-4 text-slate-500" /> {profile.mobile || "Not specified"}</p>
+            <div className="space-y-8 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-800">Contact Information</h3>
+                  <div className="space-y-2 text-slate-600">
+                    <p className="flex items-center gap-2 hover:text-slate-800"><Mail className="h-4 w-4 text-slate-500" /> {profile.email}</p>
+                    <p className="flex items-center gap-2 hover:text-slate-800"><Phone className="h-4 w-4 text-slate-500" /> {profile.mobile || "Not specified"}</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-800">Academic Information</h3>
+                  <div className="space-y-2 text-slate-600">
+                    <p className="flex items-center gap-2 hover:text-slate-800"><Building className="h-4 w-4 text-slate-500" /> {profile.collegeName || "Not specified"}</p>
+                    <p className="flex items-center gap-2 hover:text-slate-800"><GraduationCap className="h-4 w-4 text-slate-500" /> {profile.departmentName || "Not specified"}</p>
+                    <p className="flex items-center gap-2 hover:text-slate-800"><Tag className="h-4 w-4 text-slate-500" /> {profile.courseName || "Not specified"}</p>
+                  </div>
                 </div>
               </div>
-              <div>
-                <h3 className="text-xl font-semibold mb-3 text-slate-800">Academic Information</h3>
-                <div className="space-y-2 text-slate-600">
-                  <p className="flex items-center gap-2 hover:text-slate-800"><Building className="h-4 w-4 text-slate-500" /> {profile.collegeName || "Not specified"}</p>
-                  <p className="flex items-center gap-2 hover:text-slate-800"><GraduationCap className="h-4 w-4 text-slate-500" /> {profile.departmentName || "Not specified"}</p>
-                  <p className="flex items-center gap-2 hover:text-slate-800"><Tag className="h-4 w-4 text-slate-500" /> {profile.courseName || "Not specified"}</p>
+              {profile.socialLinks && profile.socialLinks.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-800">Social Media</h3>
+                  <div className="space-y-2 text-slate-600">
+                    {profile.socialLinks.map((social, index) => (
+                      <a key={index} href={ensureAbsoluteUrl(social.link)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-slate-800 transition-colors">
+                        <LinkIcon className="h-4 w-4 text-slate-500" />
+                        <span>{social.heading}</span>
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {profile.batch && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-800">Batch Details</h3>
+                  <div className="space-y-2 text-slate-600">
+                    <p className="flex items-center gap-2 hover:text-slate-800">Batch: {profile.batch.name}</p>
+                    <p className="flex items-center gap-2 hover:text-slate-800">Course: {profile.batch.courseId?.name}</p>
+                    <p className="flex items-center gap-2 hover:text-slate-800">Fees: {profile.batch.fees}</p>
+                    <p className="flex items-center gap-2 hover:text-slate-800">Start Date: {new Date(profile.batch.startDate).toLocaleDateString()}</p>
+                    <p className="flex items-center gap-2 hover:text-slate-800">End Date: {new Date(profile.batch.endDate).toLocaleDateString()}</p>
+                    
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

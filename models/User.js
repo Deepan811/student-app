@@ -36,6 +36,14 @@ const UserSchema = new mongoose.Schema({
   courseName: {
     type: String,
   },
+  socialLinks: [{
+    heading: String,
+    link: String,
+  }],
+  batch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Batch',
+  },
 }, { timestamps: true });
 
 UserSchema.pre('save', async function (next) {
@@ -97,7 +105,7 @@ export const updateProfile = async (userId, updatedData) => {
     console.log("updateProfile: userId:", userId);
     console.log("updateProfile: updatedData:", updatedData);
 
-    const allowedFields = ['name', 'mobile', 'collegeName', 'departmentName', 'courseName'];
+    const allowedFields = ['name', 'mobile', 'collegeName', 'departmentName', 'courseName', 'socialLinks'];
     const update = {};
     for (const field of allowedFields) {
       if (updatedData[field] !== undefined) {
@@ -111,8 +119,22 @@ export const updateProfile = async (userId, updatedData) => {
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true, runValidators: true });
-    console.log("updateProfile: updatedUser:", updatedUser);
-    return updatedUser;
+
+    if (!updatedUser) {
+      return null;
+    }
+
+    // Repopulate the batch details after update
+    const populatedUser = await User.findById(updatedUser._id).populate({
+      path: 'batch',
+      populate: {
+        path: 'courseId',
+        model: 'Course'
+      }
+    });
+
+    console.log("updateProfile: populatedUser:", populatedUser);
+    return populatedUser;
   } catch (error) {
     console.error("Error in User.updateProfile:", error);
     throw error;
