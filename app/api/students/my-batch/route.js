@@ -1,7 +1,7 @@
-import { getMyBatchDetails } from "../../../../../controllers/studentController.js";
+import { getMyBatchDetails } from "../../../../controllers/studentController.js";
 import { NextResponse } from 'next/server';
-import dbConnect from "../../../../../lib/dbConnect.js";
-import { verifyToken } from "../../../../../middleware/auth.js";
+import dbConnect from "../../../../lib/dbConnect.js";
+import { verifyToken } from "../../../../middleware/auth.js";
 
 export async function GET(req) {
   try {

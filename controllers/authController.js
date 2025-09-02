@@ -255,12 +255,12 @@ export const forgotPassword = async (req, res) => {
 }
 
 // Get User Profile
-export const getUserProfile = async (req, res) => { // Keep req, res for now, but return object
+export const getUserProfile = async (req, res) => {
   try {
-    const userId = req.user.id
-    const userRole = req.user.role
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-    let user
+    let user;
     if (userRole === "admin") {
       user = await Admin.findById(userId);
     } else {
@@ -274,18 +274,31 @@ export const getUserProfile = async (req, res) => { // Keep req, res for now, bu
     }
 
     if (!user) {
-      return { status: 404, data: { success: false, message: "User not found" } }
+      return { status: 404, data: { success: false, message: "User not found" } };
+    }
+
+    let userObject = user.toObject();
+
+    // If the user is a student and has a batch, find their payment status
+    if (userObject.role === 'student' && userObject.batch && userObject.batch.students) {
+      const studentInBatch = userObject.batch.students.find(
+        (s) => s.student && s.student.toString() === userObject._id.toString()
+      );
+      
+      if (studentInBatch) {
+        userObject.paymentStatus = studentInBatch.paymentStatus;
+      }
     }
 
     // Remove password from response
-    const { password, ...userWithoutPassword } = user.toObject()
+    const { password, ...userWithoutPassword } = userObject;
 
-    return { status: 200, data: { success: true, data: userWithoutPassword } }
+    return { status: 200, data: { success: true, data: userWithoutPassword } };
   } catch (error) {
-    console.error("Get profile error:", error)
-    return { status: 500, data: { success: false, message: "Server error while fetching profile" } }
+    console.error("Get profile error:", error);
+    return { status: 500, data: { success: false, message: "Server error while fetching profile" } };
   }
-}
+};
 
 // Update User Profile
 export const updateUserProfile = async (req, res) => {
@@ -299,7 +312,20 @@ export const updateUserProfile = async (req, res) => {
       return { status: 404, data: { success: false, message: "User not found" } };
     }
 
-    return { status: 200, data: { success: true, data: updatedUser } };
+    let userObject = updatedUser.toObject();
+
+    // If the user is a student and has a batch, find their payment status
+    if (userObject.role === 'student' && userObject.batch && userObject.batch.students) {
+      const studentInBatch = userObject.batch.students.find(
+        (s) => s.student && s.student.toString() === userObject._id.toString()
+      );
+      
+      if (studentInBatch) {
+        userObject.paymentStatus = studentInBatch.paymentStatus;
+      }
+    }
+
+    return { status: 200, data: { success: true, data: userObject } };
   } catch (error) {
     console.error("Update profile error:", error);
     return { status: 500, data: { success: false, message: "Server error while updating profile" } };

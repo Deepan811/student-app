@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,7 +6,7 @@ import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Mail, User, Tag, Edit, Home, LogOut, Phone, Building, GraduationCap, Link as LinkIcon, Trash2 } from "lucide-react"
+import { Mail, User, Tag, Edit, Home, LogOut, Phone, Building, GraduationCap, Link as LinkIcon, Trash2, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -28,6 +27,7 @@ interface UserProfile {
   departmentName?: string
   courseName?: string
   socialLinks?: SocialLink[]
+  paymentStatus?: string
   batch?: {
     _id: string
     name: string
@@ -330,7 +330,13 @@ export default function ProfilePage() {
                     <p className="flex items-center gap-2 hover:text-slate-800">Fees: {profile.batch.fees}</p>
                     <p className="flex items-center gap-2 hover:text-slate-800">Start Date: {new Date(profile.batch.startDate).toLocaleDateString()}</p>
                     <p className="flex items-center gap-2 hover:text-slate-800">End Date: {new Date(profile.batch.endDate).toLocaleDateString()}</p>
-                    
+                    <p className="flex items-center gap-2 hover:text-slate-800">
+                      <CreditCard className="h-4 w-4 text-slate-500" />
+                      Payment Status: 
+                      <span className={`font-bold ${profile.paymentStatus === 'paid' ? 'text-green-500' : 'text-red-500'}`}>
+                        {profile.paymentStatus ? profile.paymentStatus.charAt(0).toUpperCase() + profile.paymentStatus.slice(1) : 'Not available'}
+                      </span>
+                    </p>
                   </div>
                 </div>
               )}

@@ -51,7 +51,7 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
     const data = await response.json()
     return data
   } catch (error: any) { // Explicitly type error as 'any' for easier handling
-    console.error("API call failed:", error.message || error);
+    console.error("API call failed:", error);
     return {
       success: false,
       message: error.message || "Network error. Please try again.",

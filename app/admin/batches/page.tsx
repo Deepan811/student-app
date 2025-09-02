@@ -1,5 +1,4 @@
-
-"use client"
+'use client'
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -11,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -82,13 +82,13 @@ const BatchesPage = () => {
 
       if (response.success) {
         setStudents(prevStudents =>
-          prevStudents.map(s =>
-            s._id === studentId ? { ...s, paymentStatus: newStatus } : s
-          )
+            prevStudents.map(s =>
+                s._id === studentId ? { ...s, paymentStatus: newStatus } : s
+            )
         );
         toast({
-          title: "Success",
-          description: "Payment status updated.",
+            title: "Success",
+            description: "Payment status updated.",
         });
       } else {
         toast({
@@ -124,6 +124,9 @@ const BatchesPage = () => {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create a New Batch</DialogTitle>
+                  <DialogDescription>
+                    Fill out the form to add a new batch.
+                  </DialogDescription>
                 </DialogHeader>
                 <AddBatchForm onBatchCreated={fetchBatches} />
               </DialogContent>
@@ -170,24 +173,30 @@ const BatchesPage = () => {
                         <DialogTitle>
                           Students in {selectedBatch?.name}
                         </DialogTitle>
+                        <DialogDescription>
+                          A list of students in this batch and their payment status.
+                        </DialogDescription>
                       </DialogHeader>
                       <ul className="space-y-2">
                         {students.map(student => (
-                          <li key={student._id} className="flex justify-between items-center p-2 hover:bg-white/10 rounded-md">
+                          <li key={student._id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 hover:bg-white/10 rounded-md gap-2">
                             <div>
-                              <span>{student.name} ({student.email})</span>
-                              <span className={`ml-4 font-semibold capitalize ${student.paymentStatus === 'paid' ? 'text-green-400' : 'text-red-400'}`}>
-                                {student.paymentStatus}
-                              </span>
+                                <p className="font-semibold">{student.name}</p>
+                                <p className="text-sm text-gray-200">{student.email}</p>
                             </div>
-                            <Button
-                              size="sm"
-                              variant={student.paymentStatus === 'paid' ? 'destructive' : 'default'}
-                              onClick={() => handleUpdatePaymentStatus(student._id, student.paymentStatus)}
-                              className="bg-white/20 hover:bg-white/40"
-                            >
-                              {student.paymentStatus === 'paid' ? 'Mark as Unpaid' : 'Mark as Paid'}
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <span className={`px-2 py-1 text-xs font-bold rounded-full ${student.paymentStatus === 'paid' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                                    {student.paymentStatus}
+                                </span>
+                                <Button
+                                    size="sm"
+                                    variant={student.paymentStatus === 'paid' ? 'destructive' : 'default'}
+                                    onClick={() => handleUpdatePaymentStatus(student._id, student.paymentStatus)}
+                                    className="bg-white/20 hover:bg-white/40"
+                                >
+                                    {student.paymentStatus === 'paid' ? 'Mark Unpaid' : 'Mark Paid'}
+                                </Button>
+                            </div>
                           </li>
                         ))}
                       </ul>
