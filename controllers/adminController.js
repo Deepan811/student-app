@@ -3,6 +3,7 @@ import Admin from "../models/Admin"
 import Batch from "../models/Batch"
 import { sendEmail } from "../lib/emailService"
 import jwt from "jsonwebtoken";
+import dbConnect from "../lib/dbConnect";
 
 const serializeAdmin = (admin) => {
   if (!admin) return null;
@@ -20,6 +21,7 @@ const serializeAdmin = (admin) => {
 // Get all pending users for approval
 export const getPendingUsers = async (req, res) => {
   try {
+    await dbConnect();
     const pendingUsers = await User.getPendingUsers()
     
 
@@ -33,6 +35,7 @@ export const getPendingUsers = async (req, res) => {
 // Get all users for admin debugging
 export const viewAllUsers = async (req, res) => {
   try {
+    await dbConnect();
     const allUsers = await User.getAllUsersForAdmin()
     return { status: 200, data: { success: true, users: allUsers, count: allUsers.length } }
   } catch (error) {
@@ -45,11 +48,12 @@ export const viewAllUsers = async (req, res) => {
 export const updateUserStatus = async (req, res) => {
   console.log("Controller: updateUserStatus - Started")
   try {
+    await dbConnect();
     const { userId } = req.params
     const { status, reason } = req.body
 
     if (!["approved", "rejected"].includes(status)) {
-      console.log("Controller: updateUserStatus - Invalid status provided")
+      console.log("Controller:updateUserStatus - Invalid status provided")
       return res.status(400).json({
         success: false,
         message: "Invalid status. Must be 'approved' or 'rejected'",
@@ -59,26 +63,26 @@ export const updateUserStatus = async (req, res) => {
     // Get user details before updating
     const user = await User.findById(userId)
     if (!user) {
-      console.log("Controller: updateUserStatus - User not found")
+      console.log("Controller:updateUserStatus - User not found")
       return res.status(404).json({
         success: false,
         message: "User not found",
       })
     }
 
-    console.log(`Controller: updateUserStatus - Calling User.updateStatus for user ${userId} with status ${status}`)
+    console.log(`Controller:updateUserStatus - Calling User.updateStatus for user ${userId} with status ${status}`)
     const result = await User.updateStatus(userId, status)
-    console.log("Controller: updateUserStatus - User.updateStatus returned", result)
+    console.log("Controller:updateUserStatus - User.updateStatus returned", result)
 
     if (result.modifiedCount === 0) {
-      console.log("Controller: updateUserStatus - Failed to update user status in DB")
+      console.log("Controller:updateUserStatus - Failed to update user status in DB")
       return res.status(400).json({
         success: false,
         message: "Failed to update user status",
       })
     }
 
-    console.log("Controller: updateUserStatus - Attempting to send email")
+    console.log("Controller:updateUserStatus - Attempting to send email")
     try {
       let emailSubject, emailContent
 
@@ -120,13 +124,13 @@ export const updateUserStatus = async (req, res) => {
         subject: emailSubject,
         html: emailContent,
       })
-      console.log("Controller: updateUserStatus - Email sent successfully")
+      console.log("Controller:updateUserStatus - Email sent successfully")
     } catch (emailError) {
-      console.error("Controller: updateUserStatus - Email sending failed:", emailError)
+      console.error("Controller:updateUserStatus - Email sending failed:", emailError)
       // Continue even if email fails
     }
 
-    console.log("Controller: updateUserStatus - Sending final response")
+    console.log("Controller:updateUserStatus - Sending final response")
     return { status: 200, data: {
       success: true,
       message: `User ${status} successfully${status === "approved" ? " and password sent via email" : ""}`,
@@ -137,7 +141,7 @@ export const updateUserStatus = async (req, res) => {
       },
     } }
   } catch (error) {
-    console.error("Controller: updateUserStatus - Caught error:", error)
+    console.error("Controller:updateUserStatus - Caught error:", error)
     return { status: 500, data: {
       success: false,
       message: "Server error while updating user status",
@@ -148,6 +152,7 @@ export const updateUserStatus = async (req, res) => {
 // Get all users with pagination
 export const getAllUsers = async (req, res) => {
   try {
+    await dbConnect();
     const page = Number.parseInt(req.query.page) || 1
     const limit = Number.parseInt(req.query.limit) || 10
 
@@ -176,6 +181,7 @@ export const getAllUsers = async (req, res) => {
 // Create new admin (super admin only)
 export const createAdmin = async (req) => {
   try {
+    await dbConnect();
     const { name, email, password, permissions } = req.body
 
     // Check if admin already exists
@@ -221,6 +227,7 @@ export const createAdmin = async (req) => {
 // Admin login
 export const adminLogin = async (req) => {
   try {
+    await dbConnect();
     const { email, password } = req.body
 
     if (!email || !password) {
@@ -271,6 +278,7 @@ export const adminLogin = async (req) => {
 
 export const getApprovedStudentsForBatch = async (req, res) => {
   try {
+    await dbConnect();
     const approvedStudents = await User.find({ status: 'approved' });
 
     const studentsWithBatchInfo = await Promise.all(approvedStudents.map(async (student) => {

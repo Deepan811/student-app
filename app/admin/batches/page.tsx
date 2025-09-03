@@ -1,216 +1,288 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AddBatchForm } from "@/components/add-batch-form"
-import { api } from "@/lib/api"
-import { useToast } from "@/components/ui/use-toast"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+// Zod schema for form validation
+const batchFormSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters."),
+  courseId: z.string({ required_error: "Please select a course." }),
+  startDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
+  endDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
+  studentIds: z.array(z.string()).min(1, "Please select at least one student."),
+})
 
-import { useAuth } from "@/lib/auth-context"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+interface Course {
+  _id: string
+  name: string
+}
 
-const BatchesPage = () => {
-  interface Batch {
-    _id: string;
-    name: string;
-    courseName: string;
-    startDate: string;
-    endDate: string;
-    fees: number;
-  }
-  
+interface Student {
+  _id: string
+  name: string
+  email: string
+}
+
+interface Batch {
+  _id: string
+  name: string
+  courseName: string
+  startDate: string
+  endDate: string
+  students: Student[]
+}
+
+export default function AdminBatchesPage() {
+  const [courses, setCourses] = useState<Course[]>([])
+  const [availableStudents, setAvailableStudents] = useState<Student[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
-  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null)
-  const [students, setStudents] = useState<Array<{ _id: string; name: string; email: string; paymentStatus: string }>>([])
-  const { user, isLoading, token } = useAuth()
-  const router = useRouter()
-  const { toast } = useToast()
+  const [loading, setLoading] = useState(true)
 
-  const fetchBatches = async () => {
-        const response = await api.get("/admin/batches")
-        if (response.success && Array.isArray(response.data)) {
-          setBatches(response.data)
-        } else {
-          setBatches([]); // Ensure it's an empty array on error
-          toast({ title: "Error", description: "Failed to fetch batches.", variant: "destructive" });
-        }
-      }
+  const form = useForm<z.infer<typeof batchFormSchema>>({
+    resolver: zodResolver(batchFormSchema),
+    defaultValues: {
+      name: "",
+      studentIds: [],
+    },
+  })
 
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== 'admin')) {
-      router.push('/admin');
-    }
-  }, [user, isLoading, router]);
+  async function fetchData() {
+    setLoading(true)
+    try {
+      const token = localStorage.getItem("auth_token")
+      const [coursesRes, studentsRes, batchesRes] = await Promise.all([
+        fetch("/api/admin/courses", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/admin/users/approved-for-batch", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/admin/batches", { headers: { Authorization: `Bearer ${token}` } }),
+      ])
+      const coursesData = await coursesRes.json()
+      const studentsData = await studentsRes.json()
+      const batchesData = await batchesRes.json()
 
-  useEffect(() => {
-    if (user && user.role === 'admin') {
-      fetchBatches()
-    }
-  }, [user])
+      if (coursesData.success) setCourses(coursesData.data)
+      if (studentsData.success) setAvailableStudents(studentsData.users)
+      if (batchesData.success) setBatches(batchesData.data)
 
-  const handleViewStudents = async (batch: Batch) => {
-    setSelectedBatch(batch)
-    const response = await api.get(`/admin/batches/${batch._id}/students`)
-    if (response.success && Array.isArray(response.data)) {
-      setStudents(response.data)
-    } else {
-      setStudents([]);
-      toast({ title: "Error", description: "Failed to fetch students for this batch.", variant: "destructive" });
+    } catch (error) {
+      console.error("Failed to fetch data:", error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleUpdatePaymentStatus = async (studentId: string, currentStatus: string) => {
-    if (!selectedBatch) return;
+  useEffect(() => {
+    fetchData()
+  }, [])
 
-    const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+  async function onSubmit(values: z.infer<typeof batchFormSchema>) {
     try {
-      const response = await api.put(
-        `/admin/batches/${selectedBatch._id}/students/${studentId}`,
-        { paymentStatus: newStatus }
-      );
+        const token = localStorage.getItem("auth_token")
+        const response = await fetch("/api/admin/batches", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ ...values, students: values.studentIds }),
+        })
 
-      if (response.success) {
-        setStudents(prevStudents =>
-            prevStudents.map(s =>
-                s._id === studentId ? { ...s, paymentStatus: newStatus } : s
-            )
-        );
-        toast({
-            title: "Success",
-            description: "Payment status updated.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: response.message || "Failed to update status.",
-          variant: "destructive",
-        });
-      }
+        if (response.ok) {
+            alert("Batch created successfully!")
+            form.reset()
+            fetchData() // Refresh data
+        } else {
+            const errorData = await response.json()
+            alert(`Failed to create batch: ${errorData.data.message}`)
+        }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      toast({
-        title: "API Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+        console.error("Error creating batch:", error)
+        alert("An unexpected error occurred.")
     }
-  };
-
-  if (isLoading || !user || user.role !== 'admin') {
-    return <div>Loading...</div>; // Or a proper loading spinner
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 p-4 md:p-6">
-      <div className="container mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 md:gap-0">
-          <h1 className="text-3xl font-bold text-white">Batch Management</h1>
-          <div className="flex gap-2 flex-wrap justify-center">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="w-full md:w-auto bg-white/20 border-none text-white hover:bg-white/40 transition-all duration-300">Create New Batch</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create a New Batch</DialogTitle>
-                  <DialogDescription>
-                    Fill out the form to add a new batch.
-                  </DialogDescription>
-                </DialogHeader>
-                <AddBatchForm onBatchCreated={fetchBatches} />
-              </DialogContent>
-            </Dialog>
-            <Button asChild variant="outline" className="w-full md:w-auto bg-white/20 border-none text-white hover:bg-white/40 transition-all duration-300">
-              <Link href="/admin/dashboard">Back to Admin</Link>
-            </Button>
-          </div>
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold mb-4 text-white">Existing Batches</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {batches.map((batch) => (
-              <Card key={batch._id} className="bg-white/30 backdrop-blur-lg border border-white/40 shadow-lg text-white">
-                <CardHeader>
-                  <CardTitle>{batch.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>
-                    <strong>Course:</strong> {batch.courseName}
-                  </p>
-                  <p>
-                    <strong>Start Date:</strong>{" "}
-                    {new Date(batch.startDate).toLocaleDateString()}
-                  </p>
-                  <p>
-                    <strong>End Date:</strong>{" "}
-                    {new Date(batch.endDate).toLocaleDateString()}
-                  </p>
-                  <p>
-                    <strong>Fees:</strong> {batch.fees}
-                  </p>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        onClick={() => handleViewStudents(batch)}
-                        className="mt-4 bg-white/40 hover:bg-white/60 text-white"
-                      >
-                        View Students
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>
-                          Students in {selectedBatch?.name}
-                        </DialogTitle>
-                        <DialogDescription>
-                          A list of students in this batch and their payment status.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <ul className="space-y-2">
-                        {students.map(student => (
-                          <li key={student._id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 hover:bg-white/10 rounded-md gap-2">
-                            <div>
-                                <p className="font-semibold">{student.name}</p>
-                                <p className="text-sm text-gray-200">{student.email}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className={`px-2 py-1 text-xs font-bold rounded-full ${student.paymentStatus === 'paid' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                                    {student.paymentStatus}
-                                </span>
-                                <Button
-                                    size="sm"
-                                    variant={student.paymentStatus === 'paid' ? 'destructive' : 'default'}
-                                    onClick={() => handleUpdatePaymentStatus(student._id, student.paymentStatus)}
-                                    className="bg-white/20 hover:bg-white/40"
-                                >
-                                    {student.paymentStatus === 'paid' ? 'Mark Unpaid' : 'Mark Paid'}
-                                </Button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </DialogContent>
-                  </Dialog>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+    <div className="space-y-8">
+      <h1 className="text-2xl font-bold">Batch Management</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New Batch</CardTitle>
+              <CardDescription>Fill out the form to create a new batch.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Batch Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Fall 2024 Web Dev" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="courseId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Course</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a course" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {courses.map(course => <SelectItem key={course._id} value={course._id}>{course.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="studentIds"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Students</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                        "w-full justify-between",
+                                        !field.value?.length && "text-muted-foreground"
+                                    )}
+                                    >
+                                    {field.value?.length
+                                        ? `${field.value.length} student(s) selected`
+                                        : "Select students"}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search students..." />
+                                    <CommandEmpty>No students found.</CommandEmpty>
+                                    <CommandGroup className="max-h-64 overflow-auto">
+                                    {availableStudents.map((student) => (
+                                        <CommandItem
+                                        value={student.email}
+                                        key={student._id}
+                                        onSelect={() => {
+                                            const currentIds = field.value || []
+                                            const newIds = currentIds.includes(student._id)
+                                                ? currentIds.filter(id => id !== student._id)
+                                                : [...currentIds, student._id]
+                                            field.onChange(newIds)
+                                        }}
+                                        >
+                                        <Check
+                                            className={cn(
+                                            "mr-2 h-4 w-4",
+                                            field.value?.includes(student._id) ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                        {student.name} ({student.email})
+                                        </CommandItem>
+                                    ))}
+                                    </CommandGroup>
+                                </Command>
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                    />
 
+                  <Button type="submit" className="w-full">Create Batch</Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Existing Batches</CardTitle>
+              <CardDescription>A list of all created batches.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Batch Name</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead>Students</TableHead>
+                    <TableHead>Start Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>
+                  ) : batches.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} className="text-center">No batches found.</TableCell></TableRow>
+                  ) : (
+                    batches.map(batch => (
+                      <TableRow key={batch._id}>
+                        <TableCell className="font-medium">{batch.name}</TableCell>
+                        <TableCell>{batch.courseName}</TableCell>
+                        <TableCell>{batch.students.length}</TableCell>
+                        <TableCell>{new Date(batch.startDate).toLocaleDateString()}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   )
 }
-
-export default BatchesPage

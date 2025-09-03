@@ -2,6 +2,7 @@ import User, { updateProfile as updateUserProfileModel } from "../models/User"
 import Admin from "../models/Admin"
 import jwt from "jsonwebtoken"
 import { sendRegistrationConfirmationEmail, sendEmail } from "../lib/emailService"
+import dbConnect from "../lib/dbConnect"
 
 // Generate JWT token
 const generateToken = (id, role) => {
@@ -13,6 +14,7 @@ const generateToken = (id, role) => {
 // Student Registration Controller
 export const registerStudent = async (req, res) => {
   try {
+    await dbConnect()
     const { name, email } = req.body
 
     // Validation
@@ -76,6 +78,7 @@ export const registerStudent = async (req, res) => {
 // Student Login Controller
 export const loginStudent = async (req, res) => {
   try {
+    await dbConnect()
     const { email, password } = req.body;
     console.log("loginStudent: Attempting login for email:", email);
     console.log("loginStudent: Received password (plain text):", password);
@@ -131,6 +134,7 @@ export const loginStudent = async (req, res) => {
 // Admin Login Controller
 export const loginAdmin = async (req, res) => {
   try {
+    await dbConnect()
     const { email, password } = req.body
 
     // Validation
@@ -188,6 +192,7 @@ export const loginAdmin = async (req, res) => {
 // Forgot Password Controller
 export const forgotPassword = async (req, res) => {
   try {
+    await dbConnect()
     const { email, userType } = req.body
 
     if (!email || !userType) {
@@ -257,6 +262,7 @@ export const forgotPassword = async (req, res) => {
 // Get User Profile
 export const getUserProfile = async (req, res) => {
   try {
+    await dbConnect()
     const userId = req.user.id;
     const userRole = req.user.role;
 
@@ -303,6 +309,7 @@ export const getUserProfile = async (req, res) => {
 // Update User Profile
 export const updateUserProfile = async (req, res) => {
   try {
+    await dbConnect()
     const userId = req.user.id;
     const updatedData = req.body;
 

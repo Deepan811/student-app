@@ -29,3 +29,14 @@ export async function POST(request) {
     return NextResponse.json({ success: false, message: "Failed to add course", error: error.message }, { status: 500 });
   }
 }
+
+export async function GET(request) {
+  try {
+    await connectMongoDB();
+    const courses = await Course.find({});
+    return NextResponse.json({ success: true, data: courses }, { status: 200 });
+  } catch (error) {
+    console.error("Error in GET /api/admin/courses:", error);
+    return NextResponse.json({ success: false, message: "Failed to fetch courses", error: error.message }, { status: 500 });
+  }
+}

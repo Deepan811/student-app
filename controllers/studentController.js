@@ -1,8 +1,10 @@
 import Batch from "../models/Batch.js";
 import User from "../models/User.js";
+import dbConnect from "../lib/dbConnect.js";
 
 export const getMyBatchDetails = async (req, res) => {
   try {
+    await dbConnect();
     const userId = req.user.id; // Assuming this is set by auth middleware
 
     const batch = await Batch.findOne({ "students.student": userId })

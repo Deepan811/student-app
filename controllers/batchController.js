@@ -2,9 +2,11 @@
 import Batch from "../models/Batch.js";
 import User from "../models/User.js";
 import Course from "../models/Course.js";
+import dbConnect from "../lib/dbConnect.js";
 
 export const createBatch = async (req, res) => {
   try {
+    await dbConnect();
     const { students, ...rest } = req.body;
     const studentObjects = students.map(studentId => ({
       student: studentId,
@@ -34,6 +36,7 @@ export const createBatch = async (req, res) => {
 
 export const getAllBatches = async (req, res) => {
   try {
+    await dbConnect();
     const batches = await Batch.find({}).populate('courseId').populate('students.student');
     const batchesWithDetails = batches.map(batch => {
       const batchObj = batch.toObject();
@@ -58,6 +61,7 @@ export const getAllBatches = async (req, res) => {
 
 export const getBatchById = async (req, res) => {
   try {
+    await dbConnect();
     const batch = await Batch.findById(req.query.batchId).populate('courseId').populate('students.student');
     if (!batch) {
       return { status: 404, data: { message: "Batch not found" } }
@@ -82,6 +86,7 @@ export const getBatchById = async (req, res) => {
 
 export const getBatchStudents = async (req, res) => {
   try {
+    await dbConnect();
     const batch = await Batch.findById(req.query.batchId).populate('students.student');
     if (!batch) {
       return { status: 404, success: false, data: { message: "Batch not found" } };
@@ -103,6 +108,7 @@ export const getBatchStudents = async (req, res) => {
 
 export const addStudentsToBatch = async (req, res) => {
   try {
+    await dbConnect();
     const { batchId } = req.query;
     const { studentIds } = req.body;
 
@@ -124,6 +130,7 @@ export const addStudentsToBatch = async (req, res) => {
 
 export const updateStudentPaymentStatus = async (req, res) => {
   try {
+    await dbConnect();
     const { batchId, studentId } = req.query;
     const { paymentStatus } = req.body;
 
@@ -152,6 +159,7 @@ export const updateStudentPaymentStatus = async (req, res) => {
 
 export const removeStudentFromBatch = async (req, res) => {
   try {
+    await dbConnect();
     const { batchId, studentId } = req.query;
 
     const batch = await Batch.findById(batchId);

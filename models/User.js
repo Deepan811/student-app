@@ -98,6 +98,10 @@ UserSchema.statics.getAllUsers = async function(page, limit) {
   };
 };
 
+UserSchema.statics.getApprovedStudentsForBatch = function() {
+  return this.find({ status: 'approved', batch: { $exists: false } }).select('name email');
+};
+
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
 
 export const updateProfile = async (userId, updatedData) => {
