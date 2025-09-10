@@ -27,7 +27,7 @@ const navItems = [
   { href: "/admin/batches", label: "Batches", icon: GraduationCap },
   { href: "/admin/branches", label: "Branches", icon: GitMerge },
   { href: "/admin/companies", label: "Companies", icon: Building },
-  { href: "/admin/teachers", label: "Teachers", icon: Briefcase },
+  { href: "/admin/trainers", label: "Trainers", icon: Briefcase },
   { href: "/admin/certificates", label: "Certificates", icon: Award },
   { href: "/admin/finance", label: "Finance", icon: Banknote },
 ]

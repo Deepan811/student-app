@@ -1,5 +1,7 @@
 import User, { updateProfile as updateUserProfileModel } from "../models/User"
 import Admin from "../models/Admin"
+import Batch from "../models/Batch.js";
+import Course from "../models/Course.js";
 import jwt from "jsonwebtoken"
 import { sendRegistrationConfirmationEmail, sendEmail } from "../lib/emailService"
 import dbConnect from "../lib/dbConnect"

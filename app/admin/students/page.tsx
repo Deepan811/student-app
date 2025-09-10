@@ -145,8 +145,8 @@ export default function AdminStudentsPage() {
     <div className="space-y-8">
         <h1 className="text-2xl font-bold">Student Management</h1>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
+        <div className="flex flex-col md:grid md:grid-cols-3 md:gap-8">
+            <div className="md:col-span-2 space-y-8 order-1">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
@@ -188,7 +188,11 @@ export default function AdminStudentsPage() {
                         )}
                     </CardContent>
                 </Card>
-
+            </div>
+            <div className="md:col-span-1 order-2 md:order-none">
+                <AddStudentForm />
+            </div>
+            <div className="md:col-span-2 space-y-8 order-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
@@ -228,9 +232,6 @@ export default function AdminStudentsPage() {
                         )}
                     </CardContent>
                 </Card>
-            </div>
-            <div className="lg:col-span-1">
-                <AddStudentForm />
             </div>
         </div>
     </div>

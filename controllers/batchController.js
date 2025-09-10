@@ -47,7 +47,7 @@ export const getAllBatches = async (req, res) => {
             // Handle cases where a student might have been deleted
             if (!s.student) return null;
             return {
-                ...s.student,
+                ...s.student.toObject(),
                 paymentStatus: s.paymentStatus,
             }
         }).filter(Boolean) // Filter out any null students
@@ -73,7 +73,7 @@ export const getBatchById = async (req, res) => {
         students: batch.students.map(s => {
             if (!s.student) return null;
             return {
-                ...s.student,
+                ...s.student.toObject(),
                 paymentStatus: s.paymentStatus,
             }
         }).filter(Boolean)

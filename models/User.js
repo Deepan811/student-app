@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['student', 'admin'],
+    enum: ['student', 'admin', 'trainer'],
     default: 'student',
   },
   status: {
@@ -43,6 +43,9 @@ const UserSchema = new mongoose.Schema({
   batch: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Batch',
+  },
+  profilePicture: {
+    type: String,
   },
 }, { timestamps: true });
 
@@ -109,20 +112,25 @@ export const updateProfile = async (userId, updatedData) => {
     console.log("updateProfile: userId:", userId);
     console.log("updateProfile: updatedData:", updatedData);
 
-    const allowedFields = ['name', 'mobile', 'collegeName', 'departmentName', 'courseName', 'socialLinks'];
-    const update = {};
-    for (const field of allowedFields) {
-      if (updatedData[field] !== undefined) {
-        update[field] = updatedData[field];
-      }
+    const update = {
+      name: updatedData.name,
+      mobile: updatedData.mobile,
+      collegeName: updatedData.collegeName,
+      departmentName: updatedData.departmentName,
+      courseName: updatedData.courseName,
+      socialLinks: updatedData.socialLinks.map(link => ({
+        heading: link.heading,
+        link: link.link,
+      })),
+    };
+
+    if (updatedData.profilePicture) {
+      update.profilePicture = updatedData.profilePicture;
     }
 
-    // Ensure email is never updated through this method
-    if (update.email !== undefined) {
-      delete update.email;
-    }
+    console.log("updateProfile: update object:", update);
 
-    const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true, runValidators: true });
+    const updatedUser = await User.findByIdAndUpdate(userId, { $set: update }, { new: true, runValidators: true });
 
     if (!updatedUser) {
       return null;

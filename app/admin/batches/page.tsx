@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { useForm, Controller } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
@@ -21,6 +22,7 @@ const batchFormSchema = z.object({
   courseId: z.string({ required_error: "Please select a course." }),
   startDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   endDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
+  fees: z.coerce.number().min(0, "Fees must be a positive number."),
   studentIds: z.array(z.string()).min(1, "Please select at least one student."),
 })
 
@@ -33,6 +35,7 @@ interface Student {
   _id: string
   name: string
   email: string
+  paymentStatus: string
 }
 
 interface Batch {
@@ -41,6 +44,7 @@ interface Batch {
   courseName: string
   startDate: string
   endDate: string
+  fees: number
   students: Student[]
 }
 
@@ -49,12 +53,17 @@ export default function AdminBatchesPage() {
   const [availableStudents, setAvailableStudents] = useState<Student[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null)
 
   const form = useForm<z.infer<typeof batchFormSchema>>({
     resolver: zodResolver(batchFormSchema),
     defaultValues: {
       name: "",
       studentIds: [],
+      courseId: "",
+      startDate: "",
+      endDate: "",
+      fees: 0,
     },
   })
 
@@ -106,6 +115,44 @@ export default function AdminBatchesPage() {
     } catch (error) {
         console.error("Error creating batch:", error)
         alert("An unexpected error occurred.")
+    }
+  }
+
+  async function handleUpdatePaymentStatus(batchId: string, studentId: string, paymentStatus: 'paid' | 'unpaid') {
+    try {
+      const token = localStorage.getItem("auth_token")
+      const response = await fetch(`/api/admin/batches/${batchId}/students/${studentId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ paymentStatus }),
+        }
+      )
+
+      if (response.ok) {
+        const updatedStudent = await response.json();
+        setBatches(prevBatches =>
+          prevBatches.map(batch =>
+            batch._id === batchId
+              ? {
+                  ...batch,
+                  students: batch.students.map(student =>
+                    student._id === studentId
+                      ? { ...student, paymentStatus: updatedStudent.data.paymentStatus }
+                      : student
+                  ),
+                }
+              : batch
+          )
+        )
+        alert("Payment status updated successfully!")
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to update payment status: ${errorData.data.message}`)
+      }
+    } catch (error) {
+      console.error("Error updating payment status:", error)
+      alert("An unexpected error occurred.")
     }
   }
 
@@ -183,6 +230,19 @@ export default function AdminBatchesPage() {
                   />
                   <FormField
                     control={form.control}
+                    name="fees"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fees</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="Enter fee amount" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="studentIds"
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
@@ -253,32 +313,64 @@ export default function AdminBatchesPage() {
               <CardDescription>A list of all created batches.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Batch Name</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Students</TableHead>
-                    <TableHead>Start Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>
-                  ) : batches.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center">No batches found.</TableCell></TableRow>
-                  ) : (
-                    batches.map(batch => (
-                      <TableRow key={batch._id}>
-                        <TableCell className="font-medium">{batch.name}</TableCell>
-                        <TableCell>{batch.courseName}</TableCell>
-                        <TableCell>{batch.students.length}</TableCell>
-                        <TableCell>{new Date(batch.startDate).toLocaleDateString()}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+              {loading ? (
+                <p className="text-center">Loading...</p>
+              ) : batches.length === 0 ? (
+                <p className="text-center">No batches found.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {batches.map(batch => (
+                    <Card key={batch._id} className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-lg">
+                      <CardHeader>
+                        <CardTitle>{batch.name}</CardTitle>
+                        <CardDescription>{batch.courseName}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p>Students: {batch.students.length}</p>
+                        <p>Start Date: {new Date(batch.startDate).toLocaleDateString()}</p>
+                        <p>End Date: {new Date(batch.endDate).toLocaleDateString()}</p>
+                        <p>Fees: ${batch.fees}</p>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" className="mt-4">View Students</Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Students in {batch.name}</DialogTitle>
+                            </DialogHeader>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Name</TableHead>
+                                  <TableHead>Email</TableHead>
+                                  <TableHead>Payment Status</TableHead>
+                                  <TableHead>Action</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {batch.students.map((student, index) => (
+                                  <TableRow key={index}>
+                                    <TableCell>{student.name}</TableCell>
+                                    <TableCell>{student.email}</TableCell>
+                                    <TableCell>{student.paymentStatus}</TableCell>
+                                    <TableCell>
+                                      {student.paymentStatus === 'unpaid' ? (
+                                        <Button onClick={() => handleUpdatePaymentStatus(batch._id, student._id, 'paid')}>Mark as Paid</Button>
+                                      ) : (
+                                        <Button onClick={() => handleUpdatePaymentStatus(batch._id, student._id, 'unpaid')}>Mark as Unpaid</Button>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </DialogContent>
+                        </Dialog>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
