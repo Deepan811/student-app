@@ -28,6 +28,7 @@ interface UserProfile {
   courseName?: string
   socialLinks?: SocialLink[]
   paymentStatus?: string
+  profilePicture?: string;
   batch?: {
     _id: string
     name: string
@@ -50,13 +51,15 @@ const ensureAbsoluteUrl = (url: string) => {
 };
 
 export default function ProfilePage() {
-  const { user, token, logout, isLoading: isAuthLoading } = useAuth()
+  const { user, token, login, logout, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<UserProfile | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (isAuthLoading) return; // Wait for auth state to load
@@ -110,6 +113,21 @@ export default function ProfilePage() {
     }
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      // Create a preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (formData) {
+          setFormData({ ...formData, profilePicture: reader.result as string });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSocialLinkChange = (index: number, field: 'heading' | 'link', value: string) => {
     if (formData && formData.socialLinks) {
       const newSocialLinks = [...formData.socialLinks]
@@ -135,6 +153,37 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!formData) return
 
+    let profilePictureUrl = profile?.profilePicture;
+
+    if (selectedFile) {
+      setUploading(true);
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append("file", selectedFile);
+      cloudinaryFormData.append("upload_preset", "student-app");
+      cloudinaryFormData.append("cloud_name", "dokyhnknj");
+
+      try {
+        const response = await fetch('https://api.cloudinary.com/v1_1/dokyhnknj/image/upload', {
+          method: "POST",
+          body: cloudinaryFormData,
+        });
+        const data = await response.json();
+        if (data.secure_url) {
+          profilePictureUrl = data.secure_url;
+        } else {
+          setError("Image upload failed. Please try again.");
+          setUploading(false);
+          return;
+        }
+      } catch (error) {
+        setError("Image upload failed. Please try again.");
+        setUploading(false);
+        return;
+      } finally {
+        setUploading(false);
+      }
+    }
+
     const updatePayload = {
       name: formData.name,
       mobile: formData.mobile,
@@ -142,6 +191,7 @@ export default function ProfilePage() {
       departmentName: formData.departmentName,
       courseName: formData.courseName,
       socialLinks: formData.socialLinks,
+      profilePicture: profilePictureUrl,
     };
 
     try {
@@ -163,7 +213,13 @@ export default function ProfilePage() {
             ...profileData,
             socialLinks: profileData.socialLinks || [],
           })
+          // Update the user in the auth context
+          if (user && token) {
+            const updatedUser = { ...user, name: profileData.name, profilePicture: profileData.profilePicture };
+            login(updatedUser, token);
+          }
           setIsEditing(false)
+          setSelectedFile(null)
         } else {
           setError(data.message || "Failed to update profile")
         }
@@ -222,7 +278,7 @@ export default function ProfilePage() {
         <CardContent className="p-8">
           <div className="flex flex-col items-center text-center mb-8">
             <Avatar className="h-24 w-24 mb-4 border-4 border-white/20">
-              <AvatarImage src="/placeholder-user.jpg" alt="User Avatar" />
+              <AvatarImage src={profile.profilePicture || "/placeholder-user.jpg"} alt="User Avatar" />
               <AvatarFallback>{profile.name ? profile.name.charAt(0).toUpperCase() : ''}</AvatarFallback>
             </Avatar>
             <h2 className="text-3xl font-bold mb-1">{profile.name}</h2>
@@ -234,6 +290,10 @@ export default function ProfilePage() {
 
           {isEditing ? (
             <div className="space-y-6 mb-8">
+              <div className="flex flex-col items-center">
+                <Label htmlFor="profilePicture" className="mb-2">Change Profile Picture</Label>
+                <Input id="profilePicture" type="file" onChange={handleFileChange} className="bg-white/20 border-none text-white" />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="name">Name</Label>
@@ -346,8 +406,12 @@ export default function ProfilePage() {
           <div className="flex flex-wrap justify-center gap-4">
             {isEditing ? (
               <>
-                <Button onClick={handleSave} className="bg-white/20 border-none text-white hover:bg-white/60 transition-all duration-300">Save</Button>
-                <Button onClick={() => setIsEditing(false)} variant="outline" className="bg-white/20 border-none text-white hover:bg-white/60 transition-all duration-300">Cancel</Button>
+                <Button onClick={handleSave} disabled={uploading} className="bg-white/20 border-none text-white hover:bg-white/60 transition-all duration-300">{uploading ? "Uploading..." : "Save"}</Button>
+                <Button onClick={() => {
+                  setIsEditing(false);
+                  setFormData(profile); // Reset form data on cancel
+                  setSelectedFile(null);
+                }} variant="outline" className="bg-white/20 border-none text-white hover:bg-white/60 transition-all duration-300">Cancel</Button>
               </>
             ) : (
               <Button onClick={() => setIsEditing(true)} className="bg-white/20 border-none text-white hover:bg-white/60 transition-all duration-300 flex items-center gap-2">

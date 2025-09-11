@@ -84,10 +84,10 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </Link>
-          <Link href="/admin/teachers">
+          <Link href="/admin/trainers">
             <Card className="bg-indigo-900/30 backdrop-blur-lg border-white/20 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-white">Teachers</CardTitle>
+                <CardTitle className="text-sm font-medium text-white">Trainers</CardTitle>
                 <Briefcase className="h-4 w-4 text-slate-300" />
               </CardHeader>
               <CardContent>

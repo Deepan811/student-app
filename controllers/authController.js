@@ -123,6 +123,7 @@ export const loginStudent = async (req, res) => {
             email: user.email,
             role: user.role,
             status: user.status,
+            profilePicture: user.profilePicture,
           },
         },
       },

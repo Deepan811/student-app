@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function Navbar() {
   const { user, logout } = useAuth()
@@ -51,7 +52,10 @@ export function Navbar() {
                       </>
                     ) : (
                       <>
-                        <User className="h-4 w-4" />
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.profilePicture || "/placeholder-user.jpg"} alt={user.name} />
+                          <AvatarFallback>{user.name?.[0]}</AvatarFallback>
+                        </Avatar>
                         <span>{user.name}</span>
                       </>
                     )}

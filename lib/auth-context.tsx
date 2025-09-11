@@ -8,6 +8,7 @@ interface User {
   email: string
   role: "student" | "admin"
   status?: string
+  profilePicture?: string
 }
 
 interface AuthContextType {
