@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyToken, isAdmin } from '@/middleware/auth';
-import Branch from '@/models/Branch';
+// import Branch from '@/models/Branch';
 import dbConnect from '@/lib/dbConnect';
 
 export async function POST(request) {
