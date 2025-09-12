@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['student', 'admin', 'trainer'],
+    enum: ['student', 'admin', 'trainer', 'branch'],
     default: 'student',
   },
   status: {
@@ -47,6 +47,21 @@ const UserSchema = new mongoose.Schema({
   profilePicture: {
     type: String,
   },
+  // Branch specific fields
+  address: {
+    type: String,
+  },
+  gst_number: {
+    type: String,
+  },
+  alt_mobile_number: {
+    type: String,
+  },
+  // student specific fields
+  branch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }
 }, { timestamps: true });
 
 UserSchema.pre('save', async function (next) {

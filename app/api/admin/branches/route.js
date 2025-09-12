@@ -1,45 +1,20 @@
-import { NextResponse } from 'next/server';
-import { verifyToken, isAdmin } from '@/middleware/auth';
-// import Branch from '@/models/Branch';
-import dbConnect from '@/lib/dbConnect';
+import { NextResponse } from "next/server";
+import User from "@/models/User";
+import { connectMongoDB } from "@/lib/db";
 
-export async function POST(request) {
-  await dbConnect();
-
-  const tokenVerification = await verifyToken(request);
-  if (tokenVerification.status !== 200) {
-    return NextResponse.json(tokenVerification.data, { status: tokenVerification.status });
-  }
-
-  const adminVerification = await isAdmin(tokenVerification.data.user);
-  if (adminVerification.status !== 200) {
-    return NextResponse.json(adminVerification.data, { status: adminVerification.status });
-  }
-
-  try {
-    const { name, location, manager } = await request.json();
-
-    const newBranch = new Branch({
-      name,
-      location,
-      manager,
-    });
-
-    await newBranch.save();
-
-    return NextResponse.json({ success: true, data: newBranch }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
-}
+// This route is only for fetching existing branch users.
+// Creation is handled by /api/admin/branches/create-branch-user
 
 export async function GET(request) {
-  await dbConnect();
-
   try {
-    const branches = await Branch.find({});
-    return NextResponse.json({ success: true, data: branches });
+    await connectMongoDB();
+    
+    // Fetch all users that have the 'branch' role
+    const branches = await User.find({ role: 'branch' });
+
+    return NextResponse.json({ success: true, data: branches }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error("Error in GET /api/admin/branches:", error);
+    return NextResponse.json({ success: false, message: "Failed to fetch branches", error: error.message }, { status: 500 });
   }
 }

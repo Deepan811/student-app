@@ -81,6 +81,11 @@ export function Navbar() {
                       <Link href="/admin/dashboard">Admin Dashboard</Link>
                     </DropdownMenuItem>
                   )}
+                  {user.role === "branch" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/branch/dashboard">Branch Dashboard</Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                     <LogOut className="h-4 w-4 mr-2" />
@@ -89,24 +94,17 @@ export function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
           ) : (
-            <>
-                <Button variant="outline" className="hidden sm:inline-flex bg-transparent hover:text-red-500" asChild>
-                  <Link href="/auth">Login</Link>
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap justify-end">
+                <Button variant="outline" asChild>
+                  <Link href="/auth">User Login</Link>
                 </Button>
-                <Button className="sm:hidden bg-primary hover:bg-primary/90 text-primary-foreground hover:text-black-500" asChild>
-                  <Link href="/auth">User</Link>
+                <Button variant="secondary" asChild>
+                  <Link href="/admin">Admin Login</Link>
                 </Button>
-                 <Button variant="outline" className="hidden sm:inline-flex bg-transparent hover:text-red-500" asChild>
-                  <Link href="/auth">Register</Link>
+                <Button variant="outline" asChild>
+                  <Link href="/auth/branch/login">Branch Login</Link>
                 </Button>
-                <Button
-                  variant="secondary"
-                  className="bg-secondary hover:bg-secondary/90 text-secondary-foreground hover:text-red-500"
-                  asChild
-                >
-                  <Link href="/admin">Admin</Link>
-                </Button>
-              </>
+              </div>
           )}
         </div>
       </div>

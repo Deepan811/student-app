@@ -5,7 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "next-themes"
-import { Toaster } from "react-hot-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: "SkillChemy",
