@@ -67,6 +67,26 @@ export const isApprovedStudent = async (user) => { // Accept user object directl
     return { status: 200, data: { success: true, student: student } }
   } catch (error) {
     console.error("Student verification error:", error)
-    return { status: 500, data: { success: false, message: "Server error during student verification" } }
+    return { status: 500, data: { success: false, message: "Server error during student verification" } };
   }
-}
+};
+
+// Check if user is trainer
+export const isTrainer = async (user) => {
+  try {
+    if (!user || user.role !== "trainer") {
+      return { status: 403, data: { success: false, message: "Access denied. Trainer privileges required." } };
+    }
+
+    // Verify trainer exists in database
+    const trainer = await User.findById(user.id); // Trainers are also Users
+    if (!trainer) {
+      return { status: 403, data: { success: false, message: "Trainer not found" } };
+    }
+
+    return { status: 200, data: { success: true, trainer: trainer } };
+  } catch (error) {
+    console.error("Trainer verification error:", error);
+    return { status: 500, data: { success: false, message: "Server error during trainer verification" } };
+  }
+};

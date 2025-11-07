@@ -35,7 +35,8 @@ export async function POST(request) {
       email,
       role: 'student',
       status: 'approved',
-      generatedPassword: randomPassword,
+      password: randomPassword, // Pre-save hook will hash this
+      passwordChangeRequired: true,
       branch: branchUser.userId, // Link student to the branch
     });
 

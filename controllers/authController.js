@@ -36,18 +36,7 @@ export const registerStudent = async (req, res) => {
       })
     }
 
-    // Send confirmation email BEFORE saving the user
-    try {
-      await sendRegistrationConfirmationEmail(email, name)
-    } catch (emailError) {
-      console.error("Fatal: Email sending failed during registration:", emailError)
-      return res.status(500).json({
-        success: false,
-        message: `Failed to send confirmation email. Please try again later. Error: ${emailError.message}`,
-      })
-    }
-
-    // Create new user since email was sent successfully
+    // Create new user with pending status
     const userData = {
       name,
       email,
@@ -57,6 +46,25 @@ export const registerStudent = async (req, res) => {
 
     const user = new User(userData)
     const result = await user.save()
+
+    // Send registration submission confirmation email
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Application Submitted - Student Management System",
+        html: `
+          <h2>Application Received!</h2>
+          <p>Dear ${name},</p>
+          <p>Thank you for registering. Your application has been submitted and is currently waiting for administrator approval.</p>
+          <p>You will receive another email with your login credentials once your account has been approved.</p>
+          <br>
+          <p>Best regards,<br>Student Management Team</p>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Fatal: Email sending failed after user save:", emailError);
+      // Decide whether to revert user save or just log the error
+    }
 
     res.status(201).json({
       success: true,
@@ -115,16 +123,15 @@ export const loginStudent = async (req, res) => {
       data: {
         success: true,
         message: "Login successful",
-        data: {
-          token,
-          user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            status: user.status,
-            profilePicture: user.profilePicture,
-          },
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+          profilePicture: user.profilePicture,
+          passwordChangeRequired: user.passwordChangeRequired,
         },
       },
     };
@@ -288,6 +295,40 @@ export const getUserProfile = async (req, res) => {
 
     let userObject = user.toObject();
 
+    if (user.role === 'student') {
+      userObject.enrolledCourses = []; // Initialize as empty array
+      const batches = await Batch.find({ "students.student": userId })
+        .populate({
+          path: 'courseId',
+          select: 'name description price'
+        })
+        .populate({
+          path: 'trainers',
+          select: 'user',
+          populate: {
+            path: 'user',
+            select: 'name'
+          }
+        });
+
+      if (batches && batches.length > 0) {
+        const enrolledCourses = batches.map(batch => {
+          const studentInBatch = batch.students.find(s => s.student.toString() === userId);
+          const trainerName = batch.trainers && batch.trainers.length > 0 ? batch.trainers[0].user.name : 'N/A';
+          return {
+            batchId: batch._id,
+            batchName: batch.name,
+            course: batch.courseId,
+            trainer: { name: trainerName },
+            paymentStatus: studentInBatch ? studentInBatch.paymentStatus : 'unknown',
+            amountPaid: studentInBatch ? studentInBatch.amountPaid : 0, // Include amount paid here
+            fees: batch.fees, // Include batch fees here
+          };
+        });
+        userObject.enrolledCourses = enrolledCourses;
+      }
+    }
+
     // If the user is a student and has a batch, find their payment status
     if (userObject.role === 'student' && userObject.batch && userObject.batch.students) {
       const studentInBatch = userObject.batch.students.find(
@@ -341,3 +382,46 @@ export const updateUserProfile = async (req, res) => {
     return { status: 500, data: { success: false, message: "Server error while updating profile" } };
   }
 };
+
+// Force Password Change Controller
+export const forceChangePassword = async (req, res) => {
+  try {
+    await dbConnect();
+    const userId = req.user.id;
+    const { temporaryPassword, newPassword } = req.body;
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return { status: 404, data: { success: false, message: "User not found" } };
+    }
+
+    // Check if password change is required
+    if (!user.passwordChangeRequired) {
+      return { status: 400, data: { success: false, message: "Password has already been changed." } };
+    }
+
+    // Verify temporary password
+    const isPasswordValid = await user.comparePassword(temporaryPassword);
+    if (!isPasswordValid) {
+      return { status: 401, data: { success: false, message: "Invalid temporary password" } };
+    }
+
+    // Validate new password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return { status: 400, data: { success: false, message: "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character." } };
+    }
+
+    // Update password
+    user.password = newPassword;
+    user.passwordChangeRequired = false;
+    await user.save();
+
+    return { status: 200, data: { success: true, message: "Password changed successfully" } };
+  } catch (error) {
+    console.error("Force password change error:", error);
+    return { status: 500, data: { success: false, message: "Server error during password change" } };
+  }
+};
+

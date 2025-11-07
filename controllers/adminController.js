@@ -82,54 +82,6 @@ export const updateUserStatus = async (req, res) => {
       })
     }
 
-    console.log("Controller:updateUserStatus - Attempting to send email")
-    try {
-      let emailSubject, emailContent
-
-      if (status === "approved") {
-        emailSubject = "Account Approved - Your Login Credentials"
-        emailContent = `
-          <h2>Congratulations! Your Account Has Been Approved</h2>
-          <p>Dear ${user.name},</p>
-          <p>Great news! Your account has been approved by our administrators.</p>
-          
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1f2937; margin-top: 0;">Your Login Credentials:</h3>
-            <p><strong>Email:</strong> ${user.email}</p>
-            <p><strong>Password:</strong> ${result.plainPassword}</p>
-          </div>
-          
-          <p><strong>Important:</strong> Please save these credentials securely and consider changing your password after first login.</p>
-          <p>You can now log in to your account and start exploring our courses.</p>
-          <p>Welcome to our learning community!</p>
-          <br>
-          <p>Best regards,<br>Student Management Team</p>
-        `
-      } else {
-        
-        emailSubject = "Account Registration Update"
-        emailContent = `
-          <h2>Account Registration Update</h2>
-          <p>Dear ${user.name},</p>
-          <p>We regret to inform you that your account registration has been declined.</p>
-          ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ""}
-          <p>If you believe this is an error, please contact our support team.</p>
-          <br>
-          <p>Best regards,<br>Student Management Team</p>
-        `
-      }
-
-      await sendEmail({
-        to: user.email,
-        subject: emailSubject,
-        html: emailContent,
-      })
-      console.log("Controller:updateUserStatus - Email sent successfully")
-    } catch (emailError) {
-      console.error("Controller:updateUserStatus - Email sending failed:", emailError)
-      // Continue even if email fails
-    }
-
     console.log("Controller:updateUserStatus - Sending final response")
     return { status: 200, data: {
       success: true,
@@ -279,22 +231,20 @@ export const adminLogin = async (req) => {
 export const getApprovedStudentsForBatch = async (req, res) => {
   try {
     await dbConnect();
-    const approvedStudents = await User.find({ status: 'approved' });
+    const approvedStudents = await User.find({ status: 'approved' }).populate('batches');
 
     const studentsWithBatchInfo = await Promise.all(approvedStudents.map(async (student) => {
       try {
-        const batch = await Batch.findOne({ students: student._id });
+        // No need to find batch here, as batches are already populated on the student object
         return {
           ...student.toObject(),
-          batchName: batch ? batch.name : null,
-          batchId: batch ? batch._id : null,
+          batchCount: student.batches ? student.batches.length : 0,
         };
       } catch (mapError) {
         console.error("Error mapping student with batch info:", mapError);
         return {
           ...student.toObject(),
-          batchName: null,
-          batchId: null,
+          batchCount: student.batches ? student.batches.length : 0,
         };
       }
     }));

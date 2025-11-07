@@ -49,10 +49,19 @@ export default function AuthPage() {
           password: formData.password,
         })
 
-        if (response.success && response.data) {
-          login(response.data.user, response.data.token)
+        if (response.success && response.user) {
+          login(response.user, response.token)
           setMessage({ type: "success", text: "Login successful! Redirecting..." })
-          setTimeout(() => router.push("/"), 1500)
+          if (response.user.passwordChangeRequired) {
+            setTimeout(() => router.push("/auth/force-password-change"), 1500)
+          }
+          else {
+            if (response.user.role === 'branch') {
+              setTimeout(() => router.push("/branch/dashboard"), 1500)
+            } else {
+              setTimeout(() => router.push("/"), 1500)
+            }
+          }
         } else {
           setMessage({ type: "error", text: response.message })
         }
@@ -260,6 +269,7 @@ export default function AuthPage() {
                 )}
               </div>
             </form>
+
             <div className="text-center mt-4">
               <Link href="/" className="text-sm text-slate-400 hover:text-slate-300 hover:underline">
                 ← Back to Home

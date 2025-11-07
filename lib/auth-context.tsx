@@ -6,9 +6,10 @@ interface User {
   id: string
   name: string
   email: string
-  role: "student" | "admin"
+  role: "student" | "admin" | "branch" | "trainer"
   status?: string
   profilePicture?: string
+  passwordChangeRequired?: boolean
 }
 
 interface AuthContextType {

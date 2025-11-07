@@ -40,7 +40,8 @@ export async function POST(request) {
       email,
       role: 'branch',
       status: 'approved', // Branches are approved by default
-      generatedPassword: randomPassword, // Pre-save hook will hash this
+      password: randomPassword, // Pre-save hook will hash this
+      passwordChangeRequired: true,
     });
 
     await newBranchUser.save();

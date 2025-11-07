@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useState } from "react"
@@ -9,8 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { toast } from "@/components/ui/use-toast"
-import { User } from "lucide-react"
+import { toast, useToast } from "@/components/ui/use-toast"
+import { User, Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -29,6 +29,7 @@ interface Branch {
 export default function AdminBranchesPage() {
   const [branches, setBranches] = useState<Branch[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,7 +47,6 @@ export default function AdminBranchesPage() {
         throw new Error('Failed to fetch branches')
       }
       const data = await response.json()
-      // Filter users to only include those with the 'branch' role
       const branchUsers = data.data.filter((user: any) => user.role === 'branch');
       setBranches(branchUsers)
     } catch (error) {
@@ -86,7 +86,7 @@ export default function AdminBranchesPage() {
         description: "Branch user created successfully.",
       })
       form.reset()
-      fetchBranches() // Refresh the list of branches
+      fetchBranches()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -96,48 +96,42 @@ export default function AdminBranchesPage() {
     }
   }
 
+  const inputStyles = "bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:ring-blue-500 focus:border-blue-500"
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Branch Management</h1>
+    <div className="space-y-8 text-white">
+      <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Branch Management</h1>
+          <p className="text-slate-300">Create new branch users and view existing branches.</p>
+        </div>
       </div>
 
-      <Card>
+      <Card className="bg-slate-900/30 backdrop-blur-lg border-white/20 shadow-lg">
         <CardHeader>
-          <CardTitle>Create New Branch User</CardTitle>
-          <CardDescription>Add a new branch by creating a user account for them. They will receive an email with their login credentials.</CardDescription>
+          <CardTitle className="text-white">Create New Branch User</CardTitle>
+          <CardDescription className="text-slate-300">Add a new branch by creating a user account. They will receive an email with credentials.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Branch Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Main Campus" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Branch Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="branch@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="md:pt-8">
-                <Button type="submit" disabled={form.formState.isSubmitting}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-200">Branch Name</FormLabel>
+                  <FormControl><Input placeholder="Main Campus" {...field} className={inputStyles} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-200">Branch Email</FormLabel>
+                  <FormControl><Input placeholder="branch@example.com" {...field} className={inputStyles} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div>
+                <Button type="submit" disabled={form.formState.isSubmitting} className="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold transition-all duration-300">
+                  {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 
                   {form.formState.isSubmitting ? "Creating..." : "Create Branch User"}
                 </Button>
               </div>
@@ -146,41 +140,33 @@ export default function AdminBranchesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-slate-900/30 backdrop-blur-lg border-white/20 shadow-lg">
         <CardHeader>
-          <CardTitle>Existing Branches</CardTitle>
-          <CardDescription>A list of all created branch accounts.</CardDescription>
+          <CardTitle className="text-white">Existing Branches</CardTitle>
+          <CardDescription className="text-slate-300">A list of all created branch accounts.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p>Loading branches...</p>
+            <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-slate-300"/></div>
           ) : branches.length === 0 ? (
-            <p>No branches found.</p>
+            <p className="text-center text-slate-300 py-10">No branches found.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {branches.map((branch) => (
-                <Card key={branch._id} className="flex flex-col">
+                <Card key={branch._id} className="flex flex-col bg-slate-800/40 border border-slate-700 rounded-lg text-white">
                   <CardHeader className="flex-row items-center gap-4">
-                    <div className="bg-primary text-primary-foreground p-3 rounded-lg">
+                    <div className="bg-blue-500/20 text-blue-300 p-3 rounded-lg">
                       <User className="h-6 w-6" />
                     </div>
                     <div>
-                      <CardTitle>{branch.name}</CardTitle>
-                      <CardDescription>{branch.email}</CardDescription>
+                      <CardTitle className="text-base font-semibold text-white">{branch.name}</CardTitle>
+                      <CardDescription className="text-slate-400">{branch.email}</CardDescription>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex-grow">
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Address:</strong> {branch.address || "Not set"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        <strong>GST Number:</strong> {branch.gst_number || "Not set"}
-                      </p>
-                       <p className="text-sm text-muted-foreground">
-                        <strong>Alt. Mobile:</strong> {branch.alt_mobile_number || "Not set"}
-                      </p>
-                    </div>
+                  <CardContent className="flex-grow text-sm space-y-2">
+                    <p><span className="font-semibold text-slate-300">Address:</span> {branch.address || "Not set"}</p>
+                    <p><span className="font-semibold text-slate-300">GST Number:</span> {branch.gst_number || "Not set"}</p>
+                    <p><span className="font-semibold text-slate-300">Alt. Mobile:</span> {branch.alt_mobile_number || "Not set"}</p>
                   </CardContent>
                 </Card>
               ))}

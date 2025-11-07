@@ -26,6 +26,10 @@ const TrainerSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',
   }],
+  batches: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Batch',
+  }],
 }, { timestamps: true });
 
 const Trainer = mongoose.models.Trainer || mongoose.model('Trainer', TrainerSchema);

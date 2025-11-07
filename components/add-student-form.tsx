@@ -1,10 +1,12 @@
-"use client"
+'use client'
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export function AddStudentForm() {
   const [name, setName] = useState("")
@@ -35,7 +37,6 @@ export function AddStudentForm() {
 
       if (response.ok) {
         alert(result.message)
-        // Clear form
         setName("")
         setEmail("")
       } else {
@@ -49,26 +50,29 @@ export function AddStudentForm() {
     }
   }
 
+  const inputStyles = "bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:ring-blue-500 focus:border-blue-500"
+
   return (
-    <Card className="backdrop-blur-lg bg-black/40 border border-white/10">
+    <Card className="bg-slate-900/30 backdrop-blur-lg border-white/20 shadow-lg">
       <CardHeader>
         <CardTitle className="text-white">Add New Student</CardTitle>
         <CardDescription className="text-slate-300">
-          Add a new student and send them a welcome email with their login credentials.
+          Manually add a student and send them a welcome email with credentials.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-white">Student Name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="bg-white/10 text-white" />
+            <Label htmlFor="name" className="text-slate-200">Student Name</Label>
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className={inputStyles} placeholder="John Doe" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-white">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-white/10 text-white" />
+            <Label htmlFor="email" className="text-slate-200">Email</Label>
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputStyles} placeholder="student@example.com" />
           </div>
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Adding Student..." : "Add Student & Send Welcome Email"}
+          <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold transition-all duration-300" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? "Adding Student..." : "Add Student & Send Email"}
           </Button>
         </form>
       </CardContent>

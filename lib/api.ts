@@ -23,6 +23,11 @@ interface ForgotPasswordData {
   userType: "student" | "admin"
 }
 
+interface ForceChangePasswordData {
+  temporaryPassword: string;
+  newPassword: string;
+}
+
 // Generic API call function
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   try {
@@ -101,6 +106,17 @@ export const authApi = {
         Authorization: `Bearer ${token}`,
       },
     })
+  },
+
+  // Force password change
+  forceChangePassword: async (data: ForceChangePasswordData, token: string): Promise<ApiResponse> => {
+    return apiCall("/auth/force-password-change", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
   },
 }
 

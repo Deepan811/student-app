@@ -6,6 +6,12 @@ import { HeroSection } from "@/components/hero-section"
 import { CourseCard } from "@/components/course-card"
 import { Skeleton } from "@/components/ui/skeleton"
 
+import { TrustedCompanies } from "@/components/trusted-companies"
+
+import { WhyChooseUs } from "@/components/why-choose-us"
+
+import { RobotAnimation } from "@/components/robot-animation"
+
 // Remove the hardcoded courses array
 // const courses = [ ... ];
 
@@ -56,6 +62,8 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
+      <TrustedCompanies />
+      <WhyChooseUs />
 
       <section className="py-16 px-6">
         <div className="max-w-7xl mx-auto">

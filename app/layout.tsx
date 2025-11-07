@@ -5,7 +5,8 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "next-themes"
-import { Toaster } from "@/components/ui/toaster"
+import { Footer } from "@/components/footer"
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
   title: "SkillChemy",
@@ -35,6 +36,7 @@ html {
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             {children}
+            <Footer />
             <Toaster />
           </ThemeProvider>
         </AuthProvider>

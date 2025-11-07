@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Course from "@/models/Course";
-import { connectMongoDB } from "@/lib/db";
+import dbConnect from "@/lib/dbConnect";
 import { verifyToken, isAdmin } from "@/middleware/auth";
 
 export async function POST(request) {
@@ -17,7 +17,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    await connectMongoDB();
+    await dbConnect();
 
     const newCourse = new Course(body);
     const result = await newCourse.save();
@@ -32,11 +32,11 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
-    await connectMongoDB();
+    await dbConnect();
     const courses = await Course.find({});
     return NextResponse.json({ success: true, data: courses }, { status: 200 });
   } catch (error) {
     console.error("Error in GET /api/admin/courses:", error);
-    return NextResponse.json({ success: false, message: "Failed to fetch courses", error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Failed to fetch courses", error: error }, { status: 500 });
   }
 }

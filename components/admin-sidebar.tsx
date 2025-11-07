@@ -42,68 +42,58 @@ export function AdminSidebar() {
     router.push("/admin")
   }
 
-  const renderNavLinks = (isMobileSheet: boolean) => (
-    <nav className="grid items-start gap-2 px-4 text-sm font-medium">
-      {navItems.map(({ href, label, icon: Icon }) => (
-        isMobileSheet ? (
-          <SheetClose asChild key={label}>
-            <Link
-              href={href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50",
-                pathname === href && "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50"
-              )}
-            >
+  const renderNavLinks = (isMobileSheet: boolean) => {
+    const logoutButton = (
+      <Button
+        onClick={handleLogout}
+        className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-300 transition-all hover:text-white w-full justify-start mt-4"
+        variant="ghost"
+      >
+        <LogOut className="h-4 w-4" />
+        Logout
+      </Button>
+    );
+
+    return (
+      <nav className="grid items-start gap-2 px-4 text-sm font-medium">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          const linkContent = (
+            <>
               <Icon className="h-4 w-4" />
               {label}
+            </>
+          );
+          const linkClasses = cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-slate-300 transition-all hover:text-white",
+            isActive && "bg-white/10 text-white"
+          );
+
+          return isMobileSheet ? (
+            <SheetClose asChild key={label}>
+              <Link href={href} className={linkClasses}>
+                {linkContent}
+              </Link>
+            </SheetClose>
+          ) : (
+            <Link key={label} href={href} className={linkClasses}>
+              {linkContent}
             </Link>
-          </SheetClose>
-        ) : (
-          <Link
-            key={label}
-            href={href}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50",
-              pathname === href && "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50"
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </Link>
-        )
-      ))}
-      {/* Logout Button */}
-      {isMobileSheet ? (
-        <SheetClose asChild>
-          <Button
-            onClick={handleLogout}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50 w-full justify-start"
-            variant="ghost"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
-        </SheetClose>
-      ) : (
-        <Button
-          onClick={handleLogout}
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50 w-full justify-start"
-          variant="ghost"
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
-      )}
-    </nav>
-  )
+          );
+        })}
+        
+        {isMobileSheet ? <SheetClose asChild>{logoutButton}</SheetClose> : logoutButton}
+      </nav>
+    );
+  }
 
   return (
-    <div className="flex h-full flex-col">
+    <>
       {/* Desktop Sidebar */}
-      <div className="hidden border-l bg-gray-100/40 lg:block dark:bg-gray-800/40">
+      <div className="hidden border-l bg-slate-900/30 backdrop-blur-lg border-white/20 lg:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-[60px] items-center border-b px-6">
-            <Link className="flex items-center gap-2 font-semibold" href="/">
+          <div className="flex h-[60px] items-center border-b border-white/20 px-6">
+            <Link className="flex items-center gap-2 font-semibold text-white" href="/">
               <GraduationCap className="h-6 w-6" />
               <span>Admin Panel</span>
             </Link>
@@ -113,7 +103,7 @@ export function AdminSidebar() {
           </div>
         </div>
       </div>
-      {/* Mobile Sheet */}
+      {/* Mobile Sheet Trigger */}
       <Sheet>
         <SheetTrigger asChild>
           <Button className="lg:hidden fixed top-4 right-4 z-50" size="icon" variant="outline">
@@ -121,9 +111,9 @@ export function AdminSidebar() {
             <span className="sr-only">Toggle Menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-[240px] flex flex-col p-0">
-          <SheetHeader className="flex h-[60px] items-center border-b px-6">
-            <Link className="flex items-center gap-2 font-semibold" href="/">
+        <SheetContent side="right" className="w-[240px] flex flex-col p-0 bg-slate-900/80 backdrop-blur-lg border-l border-white/20 text-white">
+          <SheetHeader className="flex h-[60px] items-center border-b border-white/20 px-6">
+            <Link className="flex items-center gap-2 font-semibold text-white" href="/">
               <GraduationCap className="h-6 w-6" />
               <span>Admin Panel</span>
             </Link>
@@ -135,6 +125,6 @@ export function AdminSidebar() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   )
 }

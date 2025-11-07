@@ -55,8 +55,11 @@ export default function BranchLoginPage() {
         description: "Login successful. Redirecting...",
       })
       
-      // Redirect to the branch dashboard
-      router.push('/branch/dashboard')
+      if (data.user.passwordChangeRequired) {
+        router.push('/auth/force-password-change');
+      } else {
+        router.push('/branch/dashboard');
+      }
 
     } catch (error: any) {
       toast({

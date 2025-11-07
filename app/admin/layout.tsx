@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect } from 'react';
@@ -11,8 +12,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   useEffect(() => {
-    // Skip protection for the admin login page itself
-    if (pathname === '/admin') {
+    // Skip protection for auth pages
+    if (pathname === '/admin' || pathname === '/admin/forgot-password') {
       return;
     }
 
@@ -24,8 +25,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [user, isLoading, router, pathname]);
 
-  // If it's the admin login page, just render the children without any layout
-  if (pathname === '/admin') {
+  // If it's an auth page, just render the children without any layout
+  if (pathname === '/admin' || pathname === '/admin/forgot-password') {
     return <>{children}</>;
   }
 
@@ -36,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[1fr_240px]">
-      <main className="flex flex-1 flex-col p-4 lg:p-6">
+      <main className="flex flex-1 flex-col p-4 lg:p-6 bg-gradient-to-br from-purple-600 to-blue-500">
         {children}
       </main>
       <AdminSidebar />

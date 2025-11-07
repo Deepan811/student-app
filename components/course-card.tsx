@@ -23,9 +23,9 @@ export function CourseCard({ title, image, originalPrice, discountPrice, descrip
   const correctedImagePath = imagePathMap[image] || image || "/placeholder.svg";
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-card border-border">
+    <Card className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg overflow-hidden">
       <CardHeader className="p-0">
-        <div className="relative overflow-hidden rounded-t-lg">
+        <div className="relative overflow-hidden">
           <img
             src={correctedImagePath}
             alt={title}
@@ -40,19 +40,19 @@ export function CourseCard({ title, image, originalPrice, discountPrice, descrip
       </CardHeader>
 
       <CardContent className="p-6">
-        <h3 className="text-xl font-bold text-card-foreground mb-2 line-clamp-2">{title}</h3>
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-3">{description}</p>
+        <h3 className="text-xl font-bold text-white mb-2 line-clamp-2">{title}</h3>
+        <p className="text-gray-300 text-sm mb-4 line-clamp-3">{description}</p>
 
         <div className="flex items-center space-x-2">
           <span className="text-2xl font-bold text-primary">${discountPrice}</span>
           {originalPrice > discountPrice && (
-            <span className="text-lg text-muted-foreground line-through">${originalPrice}</span>
+            <span className="text-lg text-gray-400 line-through">${originalPrice}</span>
           )}
         </div>
       </CardContent>
 
       <CardFooter className="p-6 pt-0">
-        <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">Enroll</Button>
+        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">Enroll</Button>
       </CardFooter>
     </Card>
   )
