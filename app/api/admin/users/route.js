@@ -1,79 +1,65 @@
-import { getAllUsers } from "../../../../controllers/adminController"
-import { verifyToken, isAdmin } from "../../../../middleware/auth"
-import { NextResponse } from "next/server"
-import User from "../../../../models/User"
-import dbConnect from "../../../../lib/dbConnect"
-import { sendAccountPendingEmail } from "../../../../lib/emailService"
+
+import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/dbConnect';
+import User from '@/models/User';
+import { sendRegistrationConfirmationEmail } from '@/lib/emailService';
 
 export async function GET(request) {
+  await dbConnect();
   try {
-    await dbConnect();
-    const tokenResult = await verifyToken(request)
-    if (tokenResult.status !== 200) {
-      return NextResponse.json(tokenResult.data, { status: tokenResult.status })
+    const { searchParams } = new URL(request.url);
+    const role = searchParams.get('role');
+
+    let query = {};
+    if (role) {
+      query.role = role;
     }
 
-    const adminResult = await isAdmin(tokenResult.data.user)
-    if (adminResult.status !== 200) {
-      return NextResponse.json(adminResult.data, { status: adminResult.status })
-    }
-
-    const page = Number.parseInt(request.nextUrl.searchParams.get("page")) || 1;
-    const limit = Number.parseInt(request.nextUrl.searchParams.get("limit")) || 10;
-
-    const result = await getAllUsers({ query: { page, limit } }, {});
-    return NextResponse.json(result.data, { status: result.status });
+    const users = await User.find(query).populate({ path: 'batches', populate: { path: 'courseId' } });
+    return NextResponse.json({ success: true, data: users });
   } catch (error) {
-    console.error("Get all users error:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Server error while fetching all users",
-      },
-      { status: 500 },
-    )
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
 export async function POST(request) {
+  await dbConnect();
   try {
-    const tokenResult = await verifyToken(request);
-    if (tokenResult.status !== 200) {
-      return NextResponse.json(tokenResult.data, { status: tokenResult.status });
-    }
-
-    const adminResult = await isAdmin(tokenResult.data.user);
-    if (adminResult.status !== 200) {
-      return NextResponse.json(adminResult.data, { status: adminResult.status });
-    }
-
     const { name, email } = await request.json();
-    await dbConnect();
+    if (!name || !email) {
+        return NextResponse.json({ success: false, message: 'Name and email are required' }, { status: 400 });
+    }
 
-    const existingUser = await User.findOne({ email });
+    let existingUser = await User.findOne({ email });
+
     if (existingUser) {
-      return NextResponse.json({ success: false, message: "User with this email already exists." }, { status: 409 });
+        return NextResponse.json({ success: false, message: 'A user with this email already exists' }, { status: 409 });
     }
 
     const newUser = new User({
-      name,
-      email,
-      status: "pending",
+        name,
+        email,
+        role: 'student',
+        status: 'pending', // Set status to pending
     });
 
     await newUser.save();
 
-    await sendAccountPendingEmail(email, name);
+    // Send registration confirmation email
+    try {
+      await sendRegistrationConfirmationEmail(email, name);
+    } catch (emailError) {
+      console.error("Failed to send registration confirmation email to manually added user:", emailError);
+      // Non-fatal, the user is already created. Log it and continue.
+    }
 
-    return NextResponse.json({ success: true, message: "Student added. A confirmation email has been sent." }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      message: 'Student added successfully. They are now pending approval.',
+      data: newUser
+    }, { status: 201 });
+
   } catch (error) {
-    console.error("Add student error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Server error while adding student",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

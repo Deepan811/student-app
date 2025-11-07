@@ -18,6 +18,10 @@ const BatchSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  trainers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Trainer',
+  }],
   fees: {
     type: Number,
     required: true,
@@ -31,8 +35,12 @@ const BatchSchema = new mongoose.Schema({
       },
       paymentStatus: {
         type: String,
-        enum: ['paid', 'unpaid'],
+        enum: ['paid', 'unpaid', 'partially-paid'],
         default: 'unpaid',
+      },
+      amountPaid: {
+        type: Number,
+        default: 0,
       },
     },
   ],
@@ -61,7 +69,7 @@ BatchSchema.statics.addStudentsToBatch = async function(batchId, studentIds) {
     const studentObjectIds = studentsToAdd.map(s => s.student);
     await mongoose.model('User').updateMany(
       { _id: { $in: studentObjectIds } },
-      { $set: { batch: batchId } }
+      { $push: { batches: batchId } }
     );
   }
   return batch;

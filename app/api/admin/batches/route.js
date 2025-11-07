@@ -1,27 +1,28 @@
 
-import { createBatch, getAllBatches } from "../../../../controllers/batchController.js"
+import { createBatch, getAllBatches, deleteManyBatches, deleteAllBatches } from "@/controllers/batchController";
 import { NextResponse } from 'next/server';
-import dbConnect from "../../../../lib/dbConnect";
+import dbConnect from '@/lib/dbConnect';
 
 export async function POST(req) {
-  try {
-    await dbConnect();
-    const body = await req.json();
-    const result = await createBatch({ body }, {});
-    return NextResponse.json(result, { status: result.status });
-  } catch (error) {
-    console.error("Error in POST /api/admin/batches:", error);
-    return NextResponse.json({ message: "Error creating batch", error: error.message }, { status: 500 });
-  }
+  await dbConnect();
+  const body = await req.json();
+  const result = await createBatch({ body });
+  return NextResponse.json(result.data, { status: result.status });
 }
 
-export async function GET(req) {
-  try {
-    await dbConnect();
-    const result = await getAllBatches({}, {});
-    return NextResponse.json(result, { status: result.status });
-  } catch (error) {
-    console.error("Error in GET /api/admin/batches:", error);
-    return NextResponse.json({ message: "Error fetching batches", error: error.message }, { status: 500 });
+export async function GET(request) {
+  const { status, success, data } = await getAllBatches(request);
+  return NextResponse.json({ success, data }, { status });
+}
+
+export async function DELETE(req) {
+  const body = await req.json();
+  const { ids } = body;
+  let result;
+  if (ids && ids.length > 0) {
+    result = await deleteManyBatches({ body: { ids } });
+  } else {
+    result = await deleteAllBatches();
   }
+  return NextResponse.json(result.data, { status: result.status });
 }
