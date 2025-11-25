@@ -8,14 +8,17 @@ import User from '@/models/User';
 export async function GET(request) {
   await dbConnect();
   try {
-    const totalRevenue = await Batch.aggregate([
+    const totalRevenue = await Finance.aggregate([
         {
-            $unwind: '$students'
+            $match: {
+                status: { $in: ['Completed', 'Partial'] },
+                type: 'Fee Payment'
+            }
         },
         {
             $group: {
                 _id: null,
-                total: { $sum: '$students.amountPaid' }
+                total: { $sum: '$amount' }
             }
         }
     ]);
@@ -25,7 +28,7 @@ export async function GET(request) {
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]);
 
-    const outstandingFees = await Batch.aggregate([
+    const outstandingFeesFromBatches = await Batch.aggregate([
         {
             $unwind: '$students'
         },
@@ -52,15 +55,36 @@ export async function GET(request) {
             $project: {
                 _id: 0,
                 totalOutstanding: 1,
-                numberOfStudents: { $size: '$studentsPending' }
+                studentsPending: 1
             }
         }
     ]);
 
+    const outstandingFeesFromCourses = await User.aggregate([
+        { $unwind: '$enrolledCourses' },
+        { $match: { 'enrolledCourses.paymentStatus': { $in: ['Pending', 'Partial'] } } },
+        {
+            $group: {
+                _id: null,
+                totalOutstanding: { $sum: '$enrolledCourses.remainingAmount' },
+                studentsPending: { $addToSet: '$_id' }
+            }
+        }
+    ]);
+
+    const batchOutstanding = outstandingFeesFromBatches.length > 0 ? outstandingFeesFromBatches[0].totalOutstanding : 0;
+    const courseOutstanding = outstandingFeesFromCourses.length > 0 ? outstandingFeesFromCourses[0].totalOutstanding : 0;
+    const totalOutstandingFees = batchOutstanding + courseOutstanding;
+
+    const batchPendingStudents = outstandingFeesFromBatches.length > 0 ? outstandingFeesFromBatches[0].studentsPending : [];
+    const coursePendingStudents = outstandingFeesFromCourses.length > 0 ? outstandingFeesFromCourses[0].studentsPending : [];
+    const allPendingStudents = new Set([...batchPendingStudents.map(id => id.toString()), ...coursePendingStudents.map(id => id.toString())]);
+
+
     const monthlyRevenue = await Finance.aggregate([
         {
             $match: {
-                status: 'Completed',
+                status: { $in: ['Completed', 'Partial'] },
                 type: 'Fee Payment',
                 transactionDate: {
                     $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -78,18 +102,16 @@ export async function GET(request) {
 
     const totalStudents = await User.countDocuments({ role: 'student' });
 
-    const paidStudents = await Batch.aggregate([
-        {
-            $unwind: '$students'
-        },
+    const paidStudents = await Finance.aggregate([
         {
             $match: {
-                'students.paymentStatus': 'paid'
+                status: 'Completed',
+                type: 'Fee Payment'
             }
         },
         {
             $group: {
-                _id: '$students.student'
+                _id: '$studentId'
             }
         },
         {
@@ -99,10 +121,10 @@ export async function GET(request) {
 
     const summary = {
       totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].total : 0,
-      outstandingFees: outstandingFees.length > 0 ? outstandingFees[0].totalOutstanding : 0,
+      outstandingFees: totalOutstandingFees,
       monthlyRevenue: monthlyRevenue.length > 0 ? monthlyRevenue[0].total : 0,
       refunds: refunds.length > 0 ? refunds[0].total : 0,
-      pendingStudents: outstandingFees.length > 0 ? outstandingFees[0].numberOfStudents : 0,
+      pendingStudents: allPendingStudents.size,
       totalStudents: totalStudents,
       paidStudents: paidStudents.length > 0 ? paidStudents[0].count : 0
     };

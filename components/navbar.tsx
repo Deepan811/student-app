@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { User, LogOut, Menu } from "lucide-react"
+import { User, LogOut, Menu, ShoppingCart } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
 import {
@@ -14,6 +14,22 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { useCart } from "@/lib/cart-context"
+import { Badge } from "@/components/ui/badge"
+
+const CartIcon = () => {
+  const { cartItems } = useCart();
+  return (
+    <Link href="/cart" className="relative p-2">
+      <ShoppingCart className="h-6 w-6 text-foreground hover:text-primary transition-colors" />
+      {cartItems.length > 0 && (
+        <Badge className="absolute top-0 right-0 h-5 w-5 flex items-center justify-center text-xs rounded-full bg-primary text-primary-foreground">
+          {cartItems.length}
+        </Badge>
+      )}
+    </Link>
+  );
+};
 
 export function Navbar() {
   const { user, logout } = useAuth()
@@ -36,21 +52,18 @@ export function Navbar() {
 
   const authButtons = (
     <div className="flex flex-col space-y-2 mt-6">
-      <Button variant="outline" asChild>
+      <DropdownMenuItem asChild>
         <Link href="/auth">User Login</Link>
-      </Button>
-      <Button variant="secondary" asChild>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
         <Link href="/admin">Admin Login</Link>
-      </Button>
-      <Button variant="outline" asChild>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
         <Link href="/auth/branch/login">Branch Login</Link>
-      </Button>
-      <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
         <Link href="/auth/trainer/login">Trainer Login</Link>
-      </Button>
-      <Button variant="outline" asChild>
-        <Link href="/auth/trainer/login">Trainer Login</Link>
-      </Button>
+      </DropdownMenuItem>
     </div>
   )
 
@@ -72,23 +85,29 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
+          {user?.role === 'student' && <CartIcon />}
           {user ? (
             <UserMenu user={user} onLogout={handleLogout} />
           ) : (
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" asChild>
-                <Link href="/auth">User Login</Link>
-              </Button>
-              <Button variant="secondary" asChild>
-                <Link href="/admin">Admin Login</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/auth/branch/login">Branch Login</Link>
-              </Button>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
-                <Link href="/auth/trainer/login">Trainer Login</Link>
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">Login</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link href="/auth">User Login</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin">Admin Login</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/auth/branch/login">Branch Login</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/auth/trainer/login">Trainer Login</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 
@@ -127,6 +146,7 @@ export function Navbar() {
                     
                     <div className="p-4 flex flex-col space-y-4">
                       {navLinks}
+                      {user.role === 'student' && <CartIcon />}
                     </div>
 
                     <Separator />

@@ -12,9 +12,10 @@ import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { Dashboard } from "@/components/student/dashboard";
-import { StudentDashboard } from "@/components/student-dashboard"
-import { ProfileSettings } from "@/components/profile-settings"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { EnrolledBatches } from "@/components/enrolled-batches";
+import { PurchasedCourses } from "@/components/purchased-courses";
+import { ProfileSettings } from "@/components/profile-settings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 export default function ProfilePage() {
@@ -132,8 +133,10 @@ export default function ProfilePage() {
         <div>
           <h2 className="text-2xl font-bold text-white mb-8">Dashboard</h2>
           <nav className="space-y-4">
+            <Button onClick={() => { router.push('/'); setIsSidebarOpen(false); }} variant="ghost" className="w-full justify-start text-white">Home</Button>
             <Button onClick={() => { setActiveSection('dashboard'); setIsSidebarOpen(false); }} variant={activeSection === 'dashboard' ? 'secondary' : 'ghost'} className="w-full justify-start text-white">Dashboard</Button>
             <Button onClick={() => { setActiveSection('courses'); setIsSidebarOpen(false); }} variant={activeSection === 'courses' ? 'secondary' : 'ghost'} className="w-full justify-start text-white">My Courses</Button>
+            <Button onClick={() => { setActiveSection('batches'); setIsSidebarOpen(false); }} variant={activeSection === 'batches' ? 'secondary' : 'ghost'} className="w-full justify-start text-white">My Batches</Button>
             <Button onClick={() => { setActiveSection('settings'); setIsSidebarOpen(false); }} variant={activeSection === 'settings' ? 'secondary' : 'ghost'} className="w-full justify-start text-white">Profile Settings</Button>
           </nav>
         </div>
@@ -165,10 +168,21 @@ export default function ProfilePage() {
             <Card className="bg-gray-800/70 backdrop-blur-sm border border-gray-700 text-gray-100">
               <CardHeader>
                 <CardTitle className="text-white">Enrolled Courses</CardTitle>
-                <CardDescription className="text-gray-300">Courses you are currently enrolled in.</CardDescription>
+                <CardDescription className="text-gray-300">Courses you have purchased.</CardDescription>
               </CardHeader>
               <CardContent>
-                <StudentDashboard courses={profile.enrolledCourses} />
+                <PurchasedCourses courses={profile.enrolledCourses} />
+              </CardContent>
+            </Card>
+          )}
+          {activeSection === 'batches' && (
+            <Card className="bg-gray-800/70 backdrop-blur-sm border border-gray-700 text-gray-100">
+              <CardHeader>
+                <CardTitle className="text-white">Enrolled Batches</CardTitle>
+                <CardDescription className="text-gray-300">Batches you are currently enrolled in.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EnrolledBatches batches={profile.enrolledBatches} />
               </CardContent>
             </Card>
           )}

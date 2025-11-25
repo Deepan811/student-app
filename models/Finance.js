@@ -19,7 +19,10 @@ const transactionSchema = new mongoose.Schema({
   batchId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Batch',
-    required: true,
+  },
+  courseId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course',
   },
   amount: {
     type: Number,
@@ -41,6 +44,14 @@ const transactionSchema = new mongoose.Schema({
     default: 'Pending',
   },
 }, { timestamps: true });
+
+transactionSchema.pre('validate', function(next) {
+  if (!this.batchId && !this.courseId) {
+    next(new Error('Either batchId or courseId must be provided.'));
+  } else {
+    next();
+  }
+});
 
 const Finance = mongoose.models.Finance || mongoose.model('Finance', transactionSchema);
 

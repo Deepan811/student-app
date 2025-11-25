@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination"
 import { Badge } from "@/components/ui/badge"
-import { Users, UserCheck, UserX, Mail, Eye, RefreshCw, Loader2 } from "lucide-react"
+import { Users, UserCheck, UserX, Mail, Eye, RefreshCw, Loader2, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 import { AddStudentForm } from "@/components/add-student-form"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
 interface User {
   _id: string
@@ -33,6 +34,7 @@ export default function AdminStudentsPage() {
   const [processingUser, setProcessingUser] = useState<string | null>(null)
   const router = useRouter()
   const { isLoading: authLoading } = useAuth()
+  const [studentToDelete, setStudentToDelete] = useState<User | null>(null)
 
   useEffect(() => {
     if (!authLoading) {
@@ -123,6 +125,34 @@ export default function AdminStudentsPage() {
       toast.error("Error processing user action")
     } finally {
       setProcessingUser(null)
+    }
+  }
+
+  const handleDelete = async (userId: string) => {
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) {
+        router.push("/admin")
+        return
+      }
+
+      const response = await fetch(`/api/admin/students/${userId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (response.ok) {
+        setAllUsers((prev) => prev.filter((user) => user._id !== userId))
+        toast.success("Student deleted successfully")
+      } else {
+        const result = await response.json()
+        toast.error(`Error deleting student: ${result.message}`)
+      }
+    } catch (error) {
+      console.error("Error deleting student:", error)
+      toast.error("Error deleting student")
+    } finally {
+      setStudentToDelete(null)
     }
   }
 
@@ -231,14 +261,24 @@ export default function AdminStudentsPage() {
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredUsers.slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage).map((user) => (
-                          <Card key={user._id} className="bg-slate-800/40 border-slate-700 shadow-sm">
+                          <Card key={user._id} className="bg-slate-800/40 border-slate-700 shadow-sm flex flex-col">
                             <CardHeader>
                               <CardTitle className="text-white">{user.name}</CardTitle>
                               <CardDescription className="text-slate-400 flex items-center gap-2"><Mail className="h-4 w-4" />{user.email}</CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="flex-grow">
                               {getStatusBadge(user.status)}
                             </CardContent>
+                            <CardFooter className="flex justify-end gap-2">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(user)}>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                              </AlertDialog>
+                            </CardFooter>
                           </Card>
                         ))}
                       </div>
@@ -288,6 +328,24 @@ export default function AdminStudentsPage() {
           <AddStudentForm />
         </TabsContent>
       </Tabs>
+      {studentToDelete && (
+        <AlertDialog open={!!studentToDelete} onOpenChange={() => setStudentToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the student '{studentToDelete.name}' and all their associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleDelete(studentToDelete._id)}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   )
 }

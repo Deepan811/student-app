@@ -1,7 +1,6 @@
 "use client" // Add this directive as we'll be using client-side hooks
 
 import { useState, useEffect } from "react" // Import useState and useEffect
-import { Navbar } from "@/components/navbar"
 import { HeroSection } from "@/components/hero-section"
 import { CourseCard } from "@/components/course-card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -39,11 +38,7 @@ export default function HomePage() {
         const response = await fetch("/api/courses");
         if (response.ok) {
           const data = await response.json();
-          if (data.success) {
-            setCourses(data.data);
-          } else {
-            setError(data.message || "Failed to fetch courses");
-          }
+          setCourses(data);
         } else {
           const errorData = await response.json();
           setError(errorData.message || `Error: ${response.status} ${response.statusText}`);
@@ -60,7 +55,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
       <HeroSection />
       <TrustedCompanies />
       <WhyChooseUs />

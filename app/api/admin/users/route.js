@@ -15,7 +15,9 @@ export async function GET(request) {
       query.role = role;
     }
 
-    const users = await User.find(query).populate({ path: 'batches', populate: { path: 'courseId' } });
+    const users = await User.find(query)
+      .populate({ path: 'batches', populate: { path: 'courseId' } })
+      .populate({ path: 'enrolledCourses.course' });
     return NextResponse.json({ success: true, data: users });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

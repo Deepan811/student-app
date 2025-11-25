@@ -14,6 +14,8 @@ export default function StudentProfilePage() {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState('profile');
   const [profileData, setProfileData] = useState(null);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [batchDetails, setBatchDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,20 +26,37 @@ export default function StudentProfilePage() {
   }, [user, isAuthLoading, router]);
 
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const fetchStudentData = async () => {
       if (token) {
+        setLoading(true);
         try {
-          const response = await fetch('/api/student/dashboard', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          const data = await response.json();
-          if (data.success) {
-            setProfileData(data.data);
+          const [coursesResponse, batchResponse] = await Promise.all([
+            fetch('/api/students/enrolled-courses', {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            fetch('/api/students/my-batch', {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+
+          const coursesData = await coursesResponse.json();
+          const batchData = await batchResponse.json();
+
+          if (coursesData.success) {
+            setEnrolledCourses(coursesData.data);
           } else {
-            setError(data.message);
+            setError(coursesData.message || 'Failed to fetch courses');
           }
+
+          if (batchData.success) {
+            setBatchDetails(batchData.data);
+          } else {
+            // It's possible a student isn't in a batch, so don't treat "not found" as a hard error
+            if (batchResponse.status !== 404) {
+              setError(batchData.message || 'Failed to fetch batch details');
+            }
+          }
+
         } catch (error) {
           setError(error.message);
         } finally {
@@ -46,7 +65,7 @@ export default function StudentProfilePage() {
       }
     };
 
-    fetchProfileData();
+    fetchStudentData();
   }, [token]);
 
   if (isAuthLoading || loading || !user) {
@@ -66,15 +85,27 @@ export default function StudentProfilePage() {
   }
 
   const renderSection = () => {
-    if (!profileData) return null;
-
     switch (activeSection) {
       case 'profile':
-        return <PersonalDetails user={profileData.user} />;
+        return <PersonalDetails user={user} />;
       case 'courses':
-        return <EnrolledCourses courses={profileData.courses} />;
+        return <EnrolledCourses courses={enrolledCourses} />;
+      case 'batch':
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">My Batch</h2>
+            {batchDetails ? (
+              <div>
+                <p>Batch Name: {batchDetails.name}</p>
+                {/* Add more batch details as needed */}
+              </div>
+            ) : (
+              <p>You are not currently enrolled in a batch.</p>
+            )}
+          </div>
+        );
       default:
-        return <PersonalDetails user={profileData.user} />;
+        return <PersonalDetails user={user} />;
     }
   };
 
@@ -99,6 +130,18 @@ export default function StudentProfilePage() {
           >
             <BookOpen className="h-5 w-5" />
             <span>My Courses</span>
+          </button>
+          <button
+            onClick={() => setActiveSection('batch')}
+            className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg ${
+              activeSection === 'batch' ? 'bg-blue-600' : 'hover:bg-gray-700'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9 2a1 1 0 00-1 1v1H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V6a2 2 0 00-2-2h-2V3a1 1 0 00-1-1H9z" />
+              <path d="M9 2a1 1 0 00-1 1v1H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V6a2 2 0 00-2-2h-2V3a1 1 0 00-1-1H9z" />
+            </svg>
+            <span>My Batch</span>
           </button>
           <button
             onClick={logout}

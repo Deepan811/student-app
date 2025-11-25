@@ -1,5 +1,6 @@
 import User, { updateProfile as updateUserProfileModel } from "../models/User"
 import Admin from "../models/Admin"
+import Trainer from '../models/Trainer.js';
 import Batch from "../models/Batch.js";
 import Course from "../models/Course.js";
 import jwt from "jsonwebtoken"
@@ -280,13 +281,7 @@ export const getUserProfile = async (req, res) => {
     if (userRole === "admin") {
       user = await Admin.findById(userId);
     } else {
-      user = await User.findById(userId).populate({
-        path: 'batch',
-        populate: {
-          path: 'courseId',
-          model: 'Course'
-        }
-      });
+      user = await User.findById(userId).populate('enrolledCourses.course');
     }
 
     if (!user) {
@@ -296,7 +291,7 @@ export const getUserProfile = async (req, res) => {
     let userObject = user.toObject();
 
     if (user.role === 'student') {
-      userObject.enrolledCourses = []; // Initialize as empty array
+      userObject.enrolledBatches = []; // Initialize as empty array
       const batches = await Batch.find({ "students.student": userId })
         .populate({
           path: 'courseId',
@@ -312,9 +307,9 @@ export const getUserProfile = async (req, res) => {
         });
 
       if (batches && batches.length > 0) {
-        const enrolledCourses = batches.map(batch => {
+        const enrolledBatches = batches.map(batch => {
           const studentInBatch = batch.students.find(s => s.student.toString() === userId);
-          const trainerName = batch.trainers && batch.trainers.length > 0 ? batch.trainers[0].user.name : 'N/A';
+          const trainerName = batch.trainers && batch.trainers.length > 0 && batch.trainers[0].user ? batch.trainers[0].user.name : 'N/A';
           return {
             batchId: batch._id,
             batchName: batch.name,
@@ -325,7 +320,7 @@ export const getUserProfile = async (req, res) => {
             fees: batch.fees, // Include batch fees here
           };
         });
-        userObject.enrolledCourses = enrolledCourses;
+        userObject.enrolledBatches = enrolledBatches;
       }
     }
 

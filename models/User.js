@@ -2,6 +2,22 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '../lib/emailService.js';
 
+const EnrolledCourseSchema = new mongoose.Schema({
+  course: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course'
+  },
+  totalAmount: { type: Number, default: 0 },
+  amountPaid: { type: Number, default: 0 },
+  remainingAmount: { type: Number, default: 0 },
+  paymentStatus: {
+    type: String,
+    enum: ['Paid', 'Partial', 'Pending', 'Failed'],
+    default: 'Pending',
+  },
+  paymentMethod: { type: String },
+});
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -67,7 +83,28 @@ const UserSchema = new mongoose.Schema({
   batches: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Batch',
-  }]
+  }],
+  enrolledCourses: [{
+    _id: false,
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course'
+    },
+    totalAmount: { type: Number, default: 0 },
+    amountPaid: { type: Number, default: 0 },
+    remainingAmount: { type: Number, default: 0 },
+    paymentStatus: {
+      type: String,
+      enum: ['Paid', 'Partial', 'Pending', 'Failed'],
+      default: 'Pending',
+    },
+    paymentMethod: { type: String },
+  }],
+  paymentStatus: {
+    type: String,
+    enum: ['Paid', 'Pending', 'Failed'],
+    default: 'Pending',
+  }
 }, { timestamps: true });
 
 UserSchema.pre('save', async function (next) {
@@ -128,7 +165,7 @@ UserSchema.statics.updateStatus = async function(userId, status) {
   } else if (status === 'rejected') {
     const user = await this.findByIdAndUpdate(userId, { status }, { new: true });
     if (!user) throw new Error('User not found');
-
+  
     // Send rejection email
     try {
       await sendEmail({
@@ -204,7 +241,7 @@ export const updateProfile = async (userId, updatedData) => {
 
     // Repopulate the batch details after update
     const populatedUser = await User.findById(updatedUser._id).populate({
-      path: 'batch',
+      path: 'batches',
       populate: {
         path: 'courseId',
         model: 'Course'

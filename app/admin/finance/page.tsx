@@ -19,7 +19,7 @@ export default function AdminFinancePage() {
     try {
       const [summaryRes, transactionsRes] = await Promise.all([
         fetch('/api/admin/finance/summary'),
-        fetch(`/api/admin/finance?page=${page}&limit=10`)
+        fetch('/api/admin/finance')
       ]);
 
       if (!summaryRes.ok || !transactionsRes.ok) {
@@ -31,7 +31,7 @@ export default function AdminFinancePage() {
 
       setSummary(summaryData.data);
       setTransactions(transactionsData.data);
-      setTotalPages(transactionsData.totalPages);
+      // setTotalPages(transactionsData.totalPages); // Pagination removed for now
     } catch (error) {
       toast.error(error.message);
     }
@@ -40,6 +40,8 @@ export default function AdminFinancePage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+
 
   const handleTransactionAdded = () => {
     fetchData(); // Refetch data after a new transaction is added
@@ -128,7 +130,7 @@ export default function AdminFinancePage() {
               <TableHeader>
                 <TableRow className="border-slate-700 hover:bg-slate-800/50">
                   <TableHead className="text-slate-200">Student</TableHead>
-                  <TableHead className="text-slate-200">Batch</TableHead>
+                  <TableHead className="text-slate-200">Item</TableHead>
                   <TableHead className="text-slate-200">Type</TableHead>
                   <TableHead className="text-slate-200">Date</TableHead>
                   <TableHead className="text-right text-slate-200">Amount</TableHead>
@@ -138,7 +140,7 @@ export default function AdminFinancePage() {
                 {transactions.map((tx) => (
                   <TableRow key={tx._id} className="border-slate-800">
                     <TableCell className="font-medium">{tx.studentId.name}</TableCell>
-                    <TableCell className="text-slate-300">{tx.batchId.name}</TableCell>
+                    <TableCell className="text-slate-300">{tx.batchId ? tx.batchId.name : tx.courseId ? tx.courseName : 'N/A'}</TableCell>
                     <TableCell className="text-slate-300">{tx.type}</TableCell>
                     <TableCell className="text-slate-300">{new Date(tx.transactionDate).toLocaleDateString()}</TableCell>
                     <TableCell className={`text-right font-mono ${tx.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
